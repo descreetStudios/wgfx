@@ -9,7 +9,7 @@
 	- [x] IndexBuffer
 	- [x] Shader
 	- [x] Program
-	- [ ] Texture
+	- [x] Texture
 	- [ ] Uniform
 	- [ ] FrameBuffer
 - [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
