@@ -10,6 +10,7 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		bool gActive{ false };
+		u32 gGeneration{ 0 };
 
 		bgfx::RendererType::Enum to_bgfx(Renderer renderer)
 		{
@@ -120,6 +121,7 @@ namespace wgfx
 			return false;
 
 		gActive = true;
+		++gGeneration;
 		mValid = true;
 
 		if (const bgfx::Caps* caps{ bgfx::getCaps() })
@@ -152,6 +154,7 @@ namespace wgfx
 		bgfx::shutdown();
 		mValid = false;
 		gActive = false;
+		++gGeneration;
 		mRendererName = "none";
 #else
 		mValid = false;
@@ -248,4 +251,29 @@ namespace wgfx
 		return 0;
 #endif
 	}
+
+	namespace detail
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		bool device_active()
+		{
+			return gActive;
+		}
+
+		u32 device_generation()
+		{
+			return gGeneration;
+		}
+#else
+		bool device_active()
+		{
+			return false;
+		}
+
+		u32 device_generation()
+		{
+			return 0;
+		}
+#endif
+	} // namespace detail
 }

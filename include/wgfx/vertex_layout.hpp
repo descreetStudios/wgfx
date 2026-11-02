@@ -6,6 +6,11 @@
 
 namespace wgfx
 {
+	namespace detail
+	{
+		struct VertexLayoutAccess;
+	}
+
 	enum class VertexAttribute : u8
 	{
 		Position,
@@ -84,9 +89,11 @@ namespace wgfx
 		u32 hash() const;
 
 	private:
+		friend struct detail::VertexLayoutAccess;
+
 		static constexpr std::size_t StorageSize{ 128 };
 
 		alignas(16) unsigned char mStorage[StorageSize]{};
 		bool mEnded{ false };
 	};
-} // namespace wgfx
+}

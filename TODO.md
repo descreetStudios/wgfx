@@ -5,7 +5,7 @@
 - [x] Device/context wrapper
 - [ ] Resource wrappers
 	- [x] VertexLayout
-	- [ ] VertexBufferHandle
+	- [x] VertexBufferHandle
 	- [ ] IndexBufferHandle
 	- [ ] ShaderHandle
 	- [ ] ProgramHandle
