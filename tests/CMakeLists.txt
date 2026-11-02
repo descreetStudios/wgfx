@@ -1,4 +1,4 @@
-foreach(name test_wgfx test_device)
+foreach(name test_wgfx test_device test_vertex_layout)
     add_executable(${name}
         "${name}.cpp"
         "${WGFX_WCORE_SOURCE_DIR}/src/test.cpp")

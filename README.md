@@ -92,7 +92,7 @@ int main()
     if (!device)
         return 1;
 
-    bool running{};
+    bool running{ true };
     while (running)
     {
         device->frame();

@@ -4,7 +4,8 @@ project(wgfx VERSION 0.1.0 LANGUAGES CXX)
 add_library(wgfx STATIC
     "src/backend.cpp"
     "src/device.cpp"
-    "src/version.cpp")
+    "src/version.cpp"
+    "src/vertex_layout.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #

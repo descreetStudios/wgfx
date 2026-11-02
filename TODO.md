@@ -3,6 +3,15 @@
 - [x] wcore integration
 - [x] bgfx integration
 - [x] Device/context wrapper
-- [ ] Native window and swapchain
-- [ ] Shader pipeline and toolchain
-- [ ] Renderer-facing API
+- [ ] Resource wrappers
+	- [x] VertexLayout
+	- [ ] VertexBufferHandle
+	- [ ] IndexBufferHandle
+	- [ ] ShaderHandle
+	- [ ] ProgramHandle
+	- [ ] TextureHandle
+	- [ ] UniformHandle
+	- [ ] FrameBufferHandle
+- [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
+- [ ] Views, render state and draw submission
+- [ ] Resize/reset and multi-window frame buffers
