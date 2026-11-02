@@ -20,8 +20,8 @@ namespace
 		return desc;
 	}
 
-	const u16 kIndices16[]{ 0, 1, 2 };
-	const u32 kIndices32[]{ 0, 1, 2 };
+	const u16 Indices16[]{ 0, 1, 2 };
+	const u32 Indices32[]{ 0, 1, 2 };
 } // anonymous namespace
 
 TEST(index_buffer_creates_with_active_device)
@@ -30,12 +30,12 @@ TEST(index_buffer_creates_with_active_device)
 	REQUIRE(device != nullptr);
 
 	const wgfx::IndexBuffer buffer16{
-		wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16)) };
+		wgfx::IndexBuffer::create(Indices16, sizeof(Indices16)) };
 	CHECK(buffer16.valid());
 
 	const wgfx::IndexBuffer buffer32{
 		wgfx::IndexBuffer::create(
-			kIndices32, sizeof(kIndices32), wgfx::IndexType::Uint32) };
+			Indices32, sizeof(Indices32), wgfx::IndexType::Uint32) };
 	CHECK(buffer32.valid());
 }
 
@@ -44,23 +44,23 @@ TEST(index_buffer_rejects_invalid_input)
 	auto device = wgfx::Device::create(headless_desc());
 	REQUIRE(device != nullptr);
 
-	CHECK(!wgfx::IndexBuffer::create(nullptr, sizeof(kIndices16)).valid());
-	CHECK(!wgfx::IndexBuffer::create(kIndices16, 0).valid());
+	CHECK(!wgfx::IndexBuffer::create(nullptr, sizeof(Indices16)).valid());
+	CHECK(!wgfx::IndexBuffer::create(Indices16, 0).valid());
 
 	const u8 oddSize[5]{};
 	CHECK(!wgfx::IndexBuffer::create(oddSize, sizeof(oddSize), wgfx::IndexType::Uint16).valid());
 	CHECK(!wgfx::IndexBuffer::create(
-		kIndices16, sizeof(kIndices16), wgfx::IndexType::Uint32).valid());
+		Indices16, sizeof(Indices16), wgfx::IndexType::Uint32).valid());
 
 	CHECK(!wgfx::IndexBuffer::create(
-		kIndices16,
-		sizeof(kIndices16),
+		Indices16,
+		sizeof(Indices16),
 		static_cast<wgfx::IndexType>(42)).valid());
 }
 
 TEST(index_buffer_requires_active_device)
 {
-	CHECK(!wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16)).valid());
+	CHECK(!wgfx::IndexBuffer::create(Indices16, sizeof(Indices16)).valid());
 }
 
 TEST(index_buffer_is_move_only)
@@ -68,8 +68,8 @@ TEST(index_buffer_is_move_only)
 	auto device = wgfx::Device::create(headless_desc());
 	REQUIRE(device != nullptr);
 
-	auto first = wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16));
-	auto second = wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16));
+	auto first = wgfx::IndexBuffer::create(Indices16, sizeof(Indices16));
+	auto second = wgfx::IndexBuffer::create(Indices16, sizeof(Indices16));
 	REQUIRE(first.valid());
 	REQUIRE(second.valid());
 
@@ -91,12 +91,12 @@ TEST(index_buffer_dies_with_device)
 	auto device = wgfx::Device::create(headless_desc());
 	REQUIRE(device != nullptr);
 
-	auto buffer = wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16));
+	auto buffer = wgfx::IndexBuffer::create(Indices16, sizeof(Indices16));
 	REQUIRE(buffer.valid());
 
 	device->shutdown();
 	CHECK(!buffer.valid());
-	CHECK(!wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16)).valid());
+	CHECK(!wgfx::IndexBuffer::create(Indices16, sizeof(Indices16)).valid());
 
 	// The stale buffer is left with an old generation; reset must be a no-op.
 	buffer.reset();
@@ -108,7 +108,7 @@ TEST(index_buffer_handle_is_stale_after_recreate)
 	auto device = wgfx::Device::create(headless_desc());
 	REQUIRE(device != nullptr);
 
-	auto buffer = wgfx::IndexBuffer::create(kIndices16, sizeof(kIndices16));
+	auto buffer = wgfx::IndexBuffer::create(Indices16, sizeof(Indices16));
 	REQUIRE(buffer.valid());
 
 	device->shutdown();

@@ -5,9 +5,10 @@ add_library(wgfx STATIC
     "src/version.cpp"
     "src/backend.cpp"
     "src/device.cpp"
-    "src/index_buffer.cpp"
     "src/vertex_buffer.cpp"
-    "src/vertex_layout.cpp")
+    "src/vertex_layout.cpp"
+    "src/index_buffer.cpp"
+    "src/shader.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #

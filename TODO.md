@@ -5,13 +5,13 @@
 - [x] Device/context wrapper
 - [ ] Resource wrappers
 	- [x] VertexLayout
-	- [x] VertexBufferHandle
-	- [x] IndexBufferHandle
-	- [ ] ShaderHandle
-	- [ ] ProgramHandle
-	- [ ] TextureHandle
-	- [ ] UniformHandle
-	- [ ] FrameBufferHandle
+	- [x] VertexBuffer
+	- [x] IndexBuffer
+	- [x] Shader
+	- [ ] Program
+	- [ ] Texture
+	- [ ] Uniform
+	- [ ] FrameBuffer
 - [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
 - [ ] Views, render state and draw submission
 - [ ] Resize/reset and multi-window frame buffers
