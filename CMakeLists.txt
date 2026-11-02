@@ -8,7 +8,8 @@ add_library(wgfx STATIC
     "src/vertex_buffer.cpp"
     "src/vertex_layout.cpp"
     "src/index_buffer.cpp"
-    "src/shader.cpp")
+    "src/shader.cpp"
+    "src/program.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #

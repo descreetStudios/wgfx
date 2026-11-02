@@ -7,3 +7,4 @@
 #include <wgfx/vertex_layout.hpp>
 #include <wgfx/index_buffer.hpp>
 #include <wgfx/shader.hpp>
+#include <wgfx/program.hpp>
