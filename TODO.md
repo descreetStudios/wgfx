@@ -6,7 +6,7 @@
 - [ ] Resource wrappers
 	- [x] VertexLayout
 	- [x] VertexBufferHandle
-	- [ ] IndexBufferHandle
+	- [x] IndexBufferHandle
 	- [ ] ShaderHandle
 	- [ ] ProgramHandle
 	- [ ] TextureHandle

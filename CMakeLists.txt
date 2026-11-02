@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.21)
 project(wgfx VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(wgfx STATIC
+    "src/version.cpp"
     "src/backend.cpp"
     "src/device.cpp"
-    "src/version.cpp"
+    "src/index_buffer.cpp"
     "src/vertex_buffer.cpp"
     "src/vertex_layout.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
