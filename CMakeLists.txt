@@ -11,7 +11,8 @@ add_library(wgfx STATIC
     "src/shader.cpp"
     "src/program.cpp"
     "src/texture.cpp"
-    "src/uniform.cpp")
+    "src/uniform.cpp"
+    "src/framebuffer.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #
