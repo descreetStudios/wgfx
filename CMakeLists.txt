@@ -6,6 +6,7 @@ add_library(wgfx STATIC
     "src/backend.cpp"
     "src/device.cpp"
     "src/vertex_buffer.cpp"
+    "src/dynamic_vertex_buffer.cpp"
     "src/vertex_layout.cpp"
     "src/index_buffer.cpp"
     "src/shader.cpp"

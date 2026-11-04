@@ -3,7 +3,9 @@
 #include <wgfx/version.hpp>
 #include <wgfx/backend.hpp>
 #include <wgfx/device.hpp>
+#include <wgfx/buffer_flags.hpp>
 #include <wgfx/vertex_buffer.hpp>
+#include <wgfx/dynamic_vertex_buffer.hpp>
 #include <wgfx/vertex_layout.hpp>
 #include <wgfx/index_buffer.hpp>
 #include <wgfx/shader.hpp>

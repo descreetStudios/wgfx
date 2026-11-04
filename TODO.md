@@ -24,7 +24,7 @@
 	- [ ] Accessor for owned textures for sampling
 	- [ ] Ratio-based creation
 	- [ ] Swap-chain/window creation and resize
-- [ ] DynamicVertexBuffer
+- [x] DynamicVertexBuffer
 - [ ] DynamicIndexBuffer
 - [ ] IndirectBuffer
 - [ ] OcclusionQuery
