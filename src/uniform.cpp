@@ -91,15 +91,32 @@ namespace wgfx
 
 			return bgfx::UniformType::Count;
 		}
+
+		bgfx::UniformFreq::Enum to_bgfx(UniformFreq freq)
+		{
+			switch (freq)
+			{
+			case UniformFreq::Draw: return bgfx::UniformFreq::Draw;
+			case UniformFreq::View: return bgfx::UniformFreq::View;
+			case UniformFreq::Frame: return bgfx::UniformFreq::Frame;
+			case UniformFreq::Count: break;
+			}
+
+			return bgfx::UniformFreq::Count;
+		}
 	} // anonymous namespace
 #endif
 
 	Uniform::Uniform(Uniform&& other) noexcept
 		: mHandle{ other.mHandle }
 		, mGeneration{ other.mGeneration }
+		, mFreq{ other.mFreq }
+		, mCount{ other.mCount }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mFreq = UniformFreq::Draw;
+		other.mCount = 1;
 	}
 
 	Uniform& Uniform::operator=(Uniform&& other) noexcept
@@ -110,8 +127,12 @@ namespace wgfx
 		reset();
 		mHandle = other.mHandle;
 		mGeneration = other.mGeneration;
+		mFreq = other.mFreq;
+		mCount = other.mCount;
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mFreq = UniformFreq::Draw;
+		other.mCount = 1;
 		return *this;
 	}
 
@@ -125,6 +146,15 @@ namespace wgfx
 		UniformType type,
 		u16 count)
 	{
+		return create(name, UniformFreq::Draw, type, count);
+	}
+
+	Uniform Uniform::create(
+		const char* name,
+		UniformFreq freq,
+		UniformType type,
+		u16 count)
+	{
 		Uniform result;
 
 #if defined(WGFX_BACKEND_BGFX)
@@ -135,19 +165,26 @@ namespace wgfx
 		if (nativeType == bgfx::UniformType::Count)
 			return result;
 
+		const bgfx::UniformFreq::Enum nativeFreq{ to_bgfx(freq) };
+		if (nativeFreq == bgfx::UniformFreq::Count)
+			return result;
+
 		const u32 generation{ detail::device_generation() };
 		if (!detail::device_active() || generation == 0)
 			return result;
 
 		const bgfx::UniformHandle handle{ bgfx::createUniform(
-			name, nativeType, count) };
+			name, nativeFreq, nativeType, count) };
 		if (!bgfx::isValid(handle))
 			return result;
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mFreq = freq;
+		result.mCount = count;
 #else
 		(void)name;
+		(void)freq;
 		(void)type;
 		(void)count;
 #endif
@@ -162,16 +199,74 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
+	UniformFreq Uniform::frequency() const
+	{
+		return mFreq;
+	}
+
 	bool Uniform::set(const void* data, u16 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!data || count == 0 || !valid())
+		if (!data || !valid() || mFreq != UniformFreq::Draw)
+			return false;
+
+		const u16 num{ count == MaxU16 ? mCount : count };
+		if (num == 0 || num > mCount)
 			return false;
 
 		bgfx::setUniform(
 			bgfx::UniformHandle{ mHandle },
 			data,
-			count);
+			num);
+		return true;
+#else
+		(void)data;
+		(void)count;
+		return false;
+#endif
+	}
+
+	bool Uniform::setView(
+		u16 viewId,
+		const void* data,
+		u16 count) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!data || !valid() || mFreq != UniformFreq::View)
+			return false;
+
+		const u16 num{ count == MaxU16 ? mCount : count };
+		if (num == 0 || num > mCount)
+			return false;
+
+		bgfx::setViewUniform(
+			static_cast<bgfx::ViewId>(viewId),
+			bgfx::UniformHandle{ mHandle },
+			data,
+			num);
+		return true;
+#else
+		(void)viewId;
+		(void)data;
+		(void)count;
+		return false;
+#endif
+	}
+
+	bool Uniform::setFrame(const void* data, u16 count) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!data || !valid() || mFreq != UniformFreq::Frame)
+			return false;
+
+		const u16 num{ count == MaxU16 ? mCount : count };
+		if (num == 0 || num > mCount)
+			return false;
+
+		bgfx::setFrameUniform(
+			bgfx::UniformHandle{ mHandle },
+			data,
+			num);
 		return true;
 #else
 		(void)data;
@@ -193,5 +288,7 @@ namespace wgfx
 
 		mHandle = InvalidHandle;
 		mGeneration = 0;
+		mFreq = UniformFreq::Draw;
+		mCount = 1;
 	}
 }

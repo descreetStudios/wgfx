@@ -19,6 +19,15 @@ namespace wgfx
 		Count,
 	};
 
+	enum class UniformFreq : u8
+	{
+		Draw,
+		View,
+		Frame,
+
+		Count,
+	};
+
 	class Uniform
 	{
 	public:
@@ -35,17 +44,31 @@ namespace wgfx
 			const char* name,
 			UniformType type,
 			u16 count = 1);
+		static Uniform create(
+			const char* name,
+			UniformFreq freq,
+			UniformType type,
+			u16 count = 1);
 
 		bool valid() const;
+
+		UniformFreq frequency() const;
+
 		bool set(const void* data, u16 count = 0xffff) const;
+		bool setView(u16 viewId, const void* data, u16 count = 0xffff) const;
+		bool setFrame(const void* data, u16 count = 0xffff) const;
+
 		void reset();
 
 	private:
 		friend struct detail::UniformAccess;
 
 		static constexpr u16 InvalidHandle{ 0xffff };
+		static constexpr u16 MaxU16{ 0xffff };
 
 		u16 mHandle{ InvalidHandle };
 		u32 mGeneration{ 0 };
+		UniformFreq mFreq{ UniformFreq::Draw };
+		u16 mCount{ 1 };
 	};
 }

@@ -19,7 +19,6 @@
 	- [ ] `updateTexture*`, `blit`, `readTexture`
 	- [ ] Loading from image containers via `createTexture(Memory*)`
 - [x] Uniform
-	- [ ] Creation frequency (`UniformFreq::View` / `Frame`)
 - [x] FrameBuffer
 	- [ ] Accessor for owned textures for sampling
 	- [ ] Ratio-based creation

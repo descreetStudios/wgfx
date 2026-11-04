@@ -35,6 +35,68 @@ TEST(uniform_creates_with_active_device)
 	CHECK(texture.valid());
 }
 
+TEST(uniform_creates_with_frequency)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::Uniform draw{
+		wgfx::Uniform::create(
+			"u_testFreqDraw",
+			wgfx::UniformFreq::Draw,
+			wgfx::UniformType::Vec4) };
+	const wgfx::Uniform view{
+		wgfx::Uniform::create(
+			"u_testFreqView",
+			wgfx::UniformFreq::View,
+			wgfx::UniformType::Mat4) };
+	const wgfx::Uniform frame{
+		wgfx::Uniform::create(
+			"u_testFreqFrame",
+			wgfx::UniformFreq::Frame,
+			wgfx::UniformType::Vec4) };
+
+	CHECK(draw.valid());
+	CHECK(view.valid());
+	CHECK(frame.valid());
+
+	CHECK(draw.frequency() == wgfx::UniformFreq::Draw);
+	CHECK(view.frequency() == wgfx::UniformFreq::View);
+	CHECK(frame.frequency() == wgfx::UniformFreq::Frame);
+
+	const float color[4]{ 1.0f, 0.5f, 0.25f, 1.0f };
+	const float matrix[16]{};
+
+	CHECK(draw.set(color));
+	CHECK(!draw.setView(0, color));
+	CHECK(!draw.setFrame(color));
+
+	CHECK(view.setView(0, matrix));
+	CHECK(!view.setView(0, matrix, 2));
+	CHECK(!view.set(color));
+	CHECK(!view.setFrame(color));
+
+	CHECK(frame.setFrame(color));
+	CHECK(!frame.setFrame(color, 2));
+	CHECK(!frame.set(color));
+	CHECK(!frame.setView(0, color));
+}
+
+TEST(uniform_rejects_invalid_frequency)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	CHECK(!wgfx::Uniform::create(
+		"u_testFreqCount",
+		wgfx::UniformFreq::Count,
+		wgfx::UniformType::Vec4).valid());
+	CHECK(!wgfx::Uniform::create(
+		"u_testFreqUnknown",
+		static_cast<wgfx::UniformFreq>(7),
+		wgfx::UniformType::Vec4).valid());
+}
+
 TEST(uniform_sets_values)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -46,6 +108,7 @@ TEST(uniform_sets_values)
 
 	const float value[4]{ 1.0f, 0.5f, 0.25f, 1.0f };
 	CHECK(color.set(value));
+	CHECK(!color.set(value, 2));
 	CHECK(!color.set(nullptr));
 	CHECK(!color.set(value, 0));
 
@@ -156,11 +219,23 @@ TEST(uniform_requires_bgfx_backend)
 {
 	wgfx::Uniform uniform{
 		wgfx::Uniform::create("u_testNoBackend", wgfx::UniformType::Vec4) };
+	wgfx::Uniform view{
+		wgfx::Uniform::create(
+			"u_testNoBackendView",
+			wgfx::UniformFreq::View,
+			wgfx::UniformType::Mat4) };
 
 	const float value[4]{};
 	CHECK(!uniform.valid());
 	CHECK(!uniform.set(value));
+	CHECK(!uniform.setView(0, value));
+	CHECK(!uniform.setFrame(value));
+	CHECK(!view.valid());
+	CHECK(!view.set(value));
+	CHECK(!view.setView(0, value));
+	CHECK(!view.setFrame(value));
 	uniform.reset();
+	view.reset();
 }
 
 #endif
