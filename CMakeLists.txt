@@ -9,6 +9,7 @@ add_library(wgfx STATIC
     "src/dynamic_vertex_buffer.cpp"
     "src/vertex_layout.cpp"
     "src/index_buffer.cpp"
+    "src/dynamic_index_buffer.cpp"
     "src/shader.cpp"
     "src/program.cpp"
     "src/texture.cpp"

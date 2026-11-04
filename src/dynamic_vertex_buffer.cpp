@@ -179,7 +179,8 @@ namespace wgfx
 		|| !valid()
 		|| mStride == 0
 		|| size % mStride != 0
-		|| has_flag(static_cast<BufferFlags>(mFlags), BufferFlags::ComputeWrite))
+		|| has_flag(static_cast<BufferFlags>(mFlags),
+			BufferFlags::ComputeWrite))
 		{
 			return false;
 		}
@@ -197,7 +198,8 @@ namespace wgfx
 		{
 			// Growing from a non-zero start vertex is not supported.
 			if (startVertex != 0 || !has_flag(
-				static_cast<BufferFlags>(mFlags), BufferFlags::AllowResize))
+				static_cast<BufferFlags>(mFlags),
+				BufferFlags::AllowResize))
 			{
 				return false;
 			}

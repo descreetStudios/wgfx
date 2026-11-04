@@ -138,6 +138,6 @@ Working on a Wink project and need something in the graphics layer?
 
 **Made with ♥ for the Wink ecosystem**
 
-*The project contains minimal and monitored AI written code*.
+*The project contains monitored AI written code*.
 
 </div>

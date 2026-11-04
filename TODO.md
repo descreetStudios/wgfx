@@ -25,7 +25,7 @@
 	- [ ] Ratio-based creation
 	- [ ] Swap-chain/window creation and resize
 - [x] DynamicVertexBuffer
-- [ ] DynamicIndexBuffer
+- [x] DynamicIndexBuffer
 - [ ] IndirectBuffer
 - [ ] OcclusionQuery
 

@@ -8,6 +8,7 @@
 #include <wgfx/dynamic_vertex_buffer.hpp>
 #include <wgfx/vertex_layout.hpp>
 #include <wgfx/index_buffer.hpp>
+#include <wgfx/dynamic_index_buffer.hpp>
 #include <wgfx/shader.hpp>
 #include <wgfx/program.hpp>
 #include <wgfx/texture.hpp>
