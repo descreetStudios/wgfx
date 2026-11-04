@@ -28,6 +28,14 @@ namespace
 		desc.format = wgfx::TextureFormat::RGBA8;
 		return desc;
 	}
+
+	wgfx::TextureDesc rgba8_3d_desc(u16 width, u16 height, u16 depth)
+	{
+		wgfx::TextureDesc desc{ rgba8_desc(width, height) };
+		desc.type = wgfx::TextureType::Texture3D;
+		desc.depth = depth;
+		return desc;
+	}
 } // anonymous namespace
 
 TEST(texture_creates_immutable_from_data)
@@ -70,6 +78,73 @@ TEST(texture_creates_array_texture)
 	const wgfx::Texture texture{
 		wgfx::Texture::create(desc, pixels, sizeof(pixels)) };
 	CHECK(texture.valid());
+}
+
+TEST(texture_creates_3d_from_data)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const u8 voxels[2 * 2 * 2 * 4]{};
+	const wgfx::TextureDesc desc{ rgba8_3d_desc(2, 2, 2) };
+
+	const wgfx::Texture texture{
+		wgfx::Texture::create(desc, voxels, sizeof(voxels)) };
+	CHECK(texture.valid());
+}
+
+TEST(texture_creates_uninitialized_3d)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::Texture texture{
+		wgfx::Texture::create(rgba8_3d_desc(4, 4, 4)) };
+	CHECK(texture.valid());
+}
+
+TEST(texture_creates_mipmapped_3d)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	// 4x4x4, 2x2x2 and 1x1x1 RGBA8 mip levels.
+	const u8 voxels[4 * 4 * 4 * 4 + 2 * 2 * 2 * 4 + 1 * 1 * 1 * 4]{};
+	wgfx::TextureDesc desc{ rgba8_3d_desc(4, 4, 4) };
+	desc.mipmapped = true;
+
+	const wgfx::Texture texture{
+		wgfx::Texture::create(desc, voxels, sizeof(voxels)) };
+	CHECK(texture.valid());
+}
+
+TEST(texture_rejects_invalid_3d_input)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const u8 voxels[2 * 2 * 2 * 4]{};
+
+	wgfx::TextureDesc invalid{ rgba8_3d_desc(2, 2, 2) };
+	invalid.depth = 0;
+	CHECK(!wgfx::Texture::create(invalid).valid());
+
+	invalid = rgba8_3d_desc(2, 2, 2);
+	invalid.layers = 2;
+	CHECK(!wgfx::Texture::create(invalid).valid());
+
+	invalid = rgba8_3d_desc(2, 2, 2);
+	invalid.type = static_cast<wgfx::TextureType>(2);
+	CHECK(!wgfx::Texture::create(invalid).valid());
+
+	invalid = rgba8_desc(2, 2);
+	invalid.depth = 2;
+	CHECK(!wgfx::Texture::create(invalid).valid());
+
+	CHECK(!wgfx::Texture::create(
+		rgba8_3d_desc(2, 2, 2),
+		voxels,
+		sizeof(voxels) - 1).valid());
 }
 
 TEST(texture_creates_uninitialized_render_target)
@@ -216,8 +291,17 @@ TEST(texture_requires_bgfx_backend)
 	wgfx::Texture texture{
 		wgfx::Texture::create(desc, pixel, sizeof(pixel)) };
 
+	wgfx::TextureDesc desc3D;
+	desc3D.width = 1;
+	desc3D.height = 1;
+	desc3D.depth = 1;
+	desc3D.type = wgfx::TextureType::Texture3D;
+	wgfx::Texture texture3D{ wgfx::Texture::create(desc3D) };
+
 	CHECK(!texture.valid());
+	CHECK(!texture3D.valid());
 	texture.reset();
+	texture3D.reset();
 }
 
 #endif

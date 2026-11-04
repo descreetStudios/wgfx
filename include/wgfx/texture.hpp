@@ -156,6 +156,12 @@ namespace wgfx
 		return lhs;
 	}
 
+	enum class TextureType : u8
+	{
+		Texture2D,
+		Texture3D,
+	};
+
 	struct TextureDesc
 	{
 		u16 width{ 0 };
@@ -164,6 +170,9 @@ namespace wgfx
 		TextureFormat format{ TextureFormat::RGBA8 };
 		TextureFlags flags{ TextureFlags::None };
 		bool mipmapped{ false };
+
+		TextureType type{ TextureType::Texture2D };
+		u16 depth{ 1 };
 	};
 
 	class Texture

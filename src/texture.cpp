@@ -103,6 +103,20 @@ namespace wgfx
 			return result;
 		}
 
+		const bool is3D{ desc.type == TextureType::Texture3D };
+		if (desc.type != TextureType::Texture2D && !is3D)
+			return result;
+
+		if (is3D)
+		{
+			if (desc.depth == 0 || desc.layers != 1)
+				return result;
+		}
+		else if (desc.depth != 1)
+		{
+			return result;
+		}
+
 		if ((data == nullptr) != (size == 0))
 			return result;
 
@@ -111,15 +125,18 @@ namespace wgfx
 			return result;
 
 		const bgfx::TextureFormat::Enum format{ to_bgfx(desc.format) };
+		const u16 depth{ is3D ? desc.depth : u16{ 1 } };
+		const u16 numLayers{ is3D ? u16{ 1 } : desc.layers };
+
 		bgfx::TextureInfo info{};
 		bgfx::calcTextureSize(
 			info,
 			desc.width,
 			desc.height,
-			1,
+			depth,
 			false,
 			desc.mipmapped,
-			desc.layers,
+			numLayers,
 			format);
 
 		const bgfx::Memory* memory{ nullptr };
@@ -133,14 +150,24 @@ namespace wgfx
 				return result;
 		}
 
-		const bgfx::TextureHandle handle{ bgfx::createTexture2D(
-			desc.width,
-			desc.height,
-			desc.mipmapped,
-			desc.layers,
-			format,
-			static_cast<u64>(desc.flags),
-			memory) };
+		const bgfx::TextureHandle handle{
+			is3D
+				? bgfx::createTexture3D(
+					desc.width,
+					desc.height,
+					desc.depth,
+					desc.mipmapped,
+					format,
+					static_cast<u64>(desc.flags),
+					memory)
+				: bgfx::createTexture2D(
+					desc.width,
+					desc.height,
+					desc.mipmapped,
+					desc.layers,
+					format,
+					static_cast<u64>(desc.flags),
+					memory) };
 		if (!bgfx::isValid(handle))
 			return result;
 

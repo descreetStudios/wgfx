@@ -13,8 +13,7 @@
 - [x] Shader
 	- [ ] Uniform introspection via `getShaderUniforms`
 - [x] Program
-- [x] Texture (2D and texture arrays)
-	- [ ] 3D textures
+- [x] Texture
 	- [ ] Cube and cube-array textures
 	- [ ] `updateTexture*`, `blit`, `readTexture`
 	- [ ] Loading from image containers via `createTexture(Memory*)`
