@@ -10,7 +10,7 @@
 	- [x] Shader
 	- [x] Program
 	- [x] Texture
-	- [ ] Uniform
+	- [x] Uniform
 	- [ ] FrameBuffer
 - [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
 - [ ] Views, render state and draw submission

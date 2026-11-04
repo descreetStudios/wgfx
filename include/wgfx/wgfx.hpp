@@ -9,3 +9,4 @@
 #include <wgfx/shader.hpp>
 #include <wgfx/program.hpp>
 #include <wgfx/texture.hpp>
+#include <wgfx/uniform.hpp>

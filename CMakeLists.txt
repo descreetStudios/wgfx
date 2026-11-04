@@ -10,7 +10,8 @@ add_library(wgfx STATIC
     "src/index_buffer.cpp"
     "src/shader.cpp"
     "src/program.cpp"
-    "src/texture.cpp")
+    "src/texture.cpp"
+    "src/uniform.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #
