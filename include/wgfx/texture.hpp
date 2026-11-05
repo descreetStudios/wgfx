@@ -204,6 +204,11 @@ namespace wgfx
 			const TextureDesc& desc,
 			const void* data = nullptr,
 			u32 size = 0);
+		static Texture create(
+			const void* data,
+			u32 size,
+			TextureFlags flags = TextureFlags::None,
+			u8 skip = 0);
 
 		bool valid() const;
 		void reset();

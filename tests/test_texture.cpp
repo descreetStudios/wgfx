@@ -2,6 +2,7 @@
 #include <wgfx/wgfx.hpp>
 
 #include <utility>
+#include <array>
 
 using namespace wcore;
 using namespace test;
@@ -43,6 +44,31 @@ namespace
 		desc.type = wgfx::TextureType::TextureCube;
 		desc.layers = layers;
 		return desc;
+	}
+
+	// Minimal 2x2 RGBA8 KTX 1.1 container with a single mip level.
+	std::array<u8, 84> minimal_ktx()
+	{
+		return {
+			0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB,
+			0x0D, 0x0A, 0x1A, 0x0A, // identifier
+			0x01, 0x02, 0x03, 0x04, // endianness
+			0x01, 0x14, 0x00, 0x00, // glType = UNSIGNED_BYTE
+			0x01, 0x00, 0x00, 0x00, // glTypeSize
+			0x08, 0x19, 0x00, 0x00, // glFormat = RGBA
+			0x58, 0x80, 0x00, 0x00, // glInternalFormat = RGBA8
+			0x08, 0x19, 0x00, 0x00, // glBaseInternalFormat = RGBA
+			0x02, 0x00, 0x00, 0x00, // width
+			0x02, 0x00, 0x00, 0x00, // height
+			0x00, 0x00, 0x00, 0x00, // depth
+			0x00, 0x00, 0x00, 0x00, // array elements
+			0x01, 0x00, 0x00, 0x00, // faces
+			0x01, 0x00, 0x00, 0x00, // mip levels
+			0x00, 0x00, 0x00, 0x00, // key/value bytes
+			0x10, 0x00, 0x00, 0x00, // image size
+			0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+			0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		};
 	}
 } // anonymous namespace
 
@@ -266,6 +292,49 @@ TEST(texture_rejects_invalid_ratio_input)
 	CHECK(!wgfx::Texture::create(desc).valid());
 }
 
+TEST(texture_creates_from_container)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const auto ktx = minimal_ktx();
+	const wgfx::Texture texture{
+		wgfx::Texture::create(
+			ktx.data(),
+			static_cast<u32>(ktx.size())) };
+	CHECK(texture.valid());
+}
+
+TEST(texture_creates_from_container_with_flags)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const auto ktx = minimal_ktx();
+	const wgfx::Texture texture{
+		wgfx::Texture::create(
+			ktx.data(),
+			static_cast<u32>(ktx.size()),
+			wgfx::TextureFlags::Srgb) };
+	CHECK(texture.valid());
+}
+
+TEST(texture_rejects_invalid_container)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const auto ktx = minimal_ktx();
+
+	CHECK(!wgfx::Texture::create(nullptr, 0).valid());
+	CHECK(!wgfx::Texture::create(ktx.data(), 0).valid());
+
+	const u8 garbage[16]{};
+	CHECK(!wgfx::Texture::create(garbage, sizeof(garbage)).valid());
+
+	CHECK(!wgfx::Texture::create(ktx.data(), 20).valid());
+}
+
 TEST(texture_creates_uninitialized_render_target)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -309,6 +378,10 @@ TEST(texture_rejects_invalid_input)
 
 TEST(texture_requires_active_device)
 {
+	const auto ktx = minimal_ktx();
+	CHECK(!wgfx::Texture::create(
+		ktx.data(),
+		static_cast<u32>(ktx.size())).valid());
 	const u8 pixels[2 * 2 * 4]{};
 	const wgfx::TextureDesc desc{ rgba8_desc(2, 2) };
 
@@ -423,12 +496,18 @@ TEST(texture_requires_bgfx_backend)
 	descCube.type = wgfx::TextureType::TextureCube;
 	wgfx::Texture textureCube{ wgfx::Texture::create(descCube) };
 
+	const u8 container[16]{};
+	wgfx::Texture containerTexture{
+		wgfx::Texture::create(container, sizeof(container)) };
+
 	CHECK(!texture.valid());
 	CHECK(!texture3D.valid());
 	CHECK(!textureCube.valid());
+	CHECK(!containerTexture.valid());
 	texture.reset();
 	texture3D.reset();
 	textureCube.reset();
+	containerTexture.reset();
 }
 
 #endif

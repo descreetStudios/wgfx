@@ -2,6 +2,8 @@
 
 #include "device_internal.hpp"
 
+#include <cstring>
+
 #if defined(WGFX_BACKEND_BGFX)
 #include "texture_internal.hpp"
 
@@ -78,6 +80,21 @@ namespace wgfx
 			return ratio == BackbufferRatio::Explicit
 				? bgfx::BackbufferRatio::Count
 				: static_cast<bgfx::BackbufferRatio::Enum>(ratio);
+		}
+
+		bool is_image_container(const void* data, u32 size)
+		{
+			if (!data)
+				return false;
+
+			static constexpr u8 dds[4]{ 'D', 'D', 'S', ' ' };
+			static constexpr u8 ktx[4]{ 0xAB, 'K', 'T', 'X' };
+			static constexpr u8 pvr3[4]{ 'P', 'V', 'R', 3 };
+
+			const u8* bytes{ static_cast<const u8*>(data) };
+			return (size >= 128 && std::memcmp(bytes, dds, sizeof(dds)) == 0)
+				|| (size >= 64 && std::memcmp(bytes, ktx, sizeof(ktx)) == 0)
+				|| (size >= 52 && std::memcmp(bytes, pvr3, sizeof(pvr3)) == 0);
 		}
 	} // anonymous namespace
 #endif
@@ -247,6 +264,45 @@ namespace wgfx
 		(void)desc;
 		(void)data;
 		(void)size;
+#endif
+
+		return result;
+	}
+
+	Texture Texture::create(
+		const void* data,
+		u32 size,
+		TextureFlags flags,
+		u8 skip)
+	{
+		Texture result;
+
+#if defined(WGFX_BACKEND_BGFX)
+		if (!data || size == 0 || !is_image_container(data, size))
+			return result;
+
+		const u32 generation{ detail::device_generation() };
+		if (!detail::device_active() || generation == 0)
+			return result;
+
+		const bgfx::Memory* memory{ bgfx::copy(data, size) };
+		if (!memory)
+			return result;
+
+		const bgfx::TextureHandle handle{ bgfx::createTexture(
+			memory,
+			static_cast<u64>(flags),
+			skip) };
+		if (!bgfx::isValid(handle))
+			return result;
+
+		result.mHandle = handle.idx;
+		result.mGeneration = generation;
+#else
+		(void)data;
+		(void)size;
+		(void)flags;
+		(void)skip;
 #endif
 
 		return result;
