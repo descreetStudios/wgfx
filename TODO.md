@@ -24,7 +24,7 @@
 - [x] DynamicVertexBuffer
 - [x] DynamicIndexBuffer
 - [ ] IndirectBuffer
-- [ ] OcclusionQuery
+- [x] OcclusionQuery
 
 ## Rendering
 - [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)

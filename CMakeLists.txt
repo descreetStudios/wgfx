@@ -14,7 +14,8 @@ add_library(wgfx STATIC
     "src/program.cpp"
     "src/texture.cpp"
     "src/uniform.cpp"
-    "src/framebuffer.cpp")
+    "src/framebuffer.cpp"
+    "src/occlusion_query.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #
