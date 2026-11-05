@@ -14,7 +14,6 @@
 	- [ ] Uniform introspection via `getShaderUniforms`
 - [x] Program
 - [x] Texture
-	- [ ] Cube and cube-array textures
 	- [ ] `updateTexture*`, `blit`, `readTexture`
 	- [ ] Loading from image containers via `createTexture(Memory*)`
 - [x] Uniform

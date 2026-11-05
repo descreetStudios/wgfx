@@ -160,6 +160,7 @@ namespace wgfx
 	{
 		Texture2D,
 		Texture3D,
+		TextureCube,
 	};
 
 	struct TextureDesc

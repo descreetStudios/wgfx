@@ -104,12 +104,18 @@ namespace wgfx
 		}
 
 		const bool is3D{ desc.type == TextureType::Texture3D };
-		if (desc.type != TextureType::Texture2D && !is3D)
+		const bool isCube{ desc.type == TextureType::TextureCube };
+		if (desc.type != TextureType::Texture2D && !is3D && !isCube)
 			return result;
 
 		if (is3D)
 		{
 			if (desc.depth == 0 || desc.layers != 1)
+				return result;
+		}
+		else if (isCube)
+		{
+			if (desc.depth != 1 || desc.width != desc.height)
 				return result;
 		}
 		else if (desc.depth != 1)
@@ -134,7 +140,7 @@ namespace wgfx
 			desc.width,
 			desc.height,
 			depth,
-			false,
+			isCube,
 			desc.mipmapped,
 			numLayers,
 			format);
@@ -150,24 +156,40 @@ namespace wgfx
 				return result;
 		}
 
-		const bgfx::TextureHandle handle{
-			is3D
-				? bgfx::createTexture3D(
-					desc.width,
-					desc.height,
-					desc.depth,
-					desc.mipmapped,
-					format,
-					static_cast<u64>(desc.flags),
-					memory)
-				: bgfx::createTexture2D(
-					desc.width,
-					desc.height,
-					desc.mipmapped,
-					desc.layers,
-					format,
-					static_cast<u64>(desc.flags),
-					memory) };
+		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
+		if (is3D)
+		{
+			handle = bgfx::createTexture3D(
+				desc.width,
+				desc.height,
+				desc.depth,
+				desc.mipmapped,
+				format,
+				static_cast<u64>(desc.flags),
+				memory);
+		}
+		else if (isCube)
+		{
+			handle = bgfx::createTextureCube(
+				desc.width,
+				desc.mipmapped,
+				desc.layers,
+				format,
+				static_cast<u64>(desc.flags),
+				memory);
+		}
+		else
+		{
+			handle = bgfx::createTexture2D(
+				desc.width,
+				desc.height,
+				desc.mipmapped,
+				desc.layers,
+				format,
+				static_cast<u64>(desc.flags),
+				memory);
+		}
+
 		if (!bgfx::isValid(handle))
 			return result;
 
