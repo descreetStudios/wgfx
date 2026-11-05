@@ -2,6 +2,8 @@
 
 #include "device_internal.hpp"
 
+#include <utility>
+
 #if defined(WGFX_BACKEND_BGFX)
 #include "framebuffer_internal.hpp"
 #include "texture_internal.hpp"
@@ -80,6 +82,8 @@ namespace wgfx
 	FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
 		: mHandle{ other.mHandle }
 		, mGeneration{ other.mGeneration }
+		, mColorTexture{ std::move(other.mColorTexture) }
+		, mDepthTexture{ std::move(other.mDepthTexture) }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
@@ -93,6 +97,8 @@ namespace wgfx
 		reset();
 		mHandle = other.mHandle;
 		mGeneration = other.mGeneration;
+		mColorTexture = std::move(other.mColorTexture);
+		mDepthTexture = std::move(other.mDepthTexture);
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
 		return *this;
@@ -161,6 +167,8 @@ namespace wgfx
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mColorTexture = std::move(color);
+		result.mDepthTexture = std::move(depth);
 #else
 		(void)desc;
 #endif
@@ -225,6 +233,16 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
+	const Texture& FrameBuffer::colorTexture() const
+	{
+		return mColorTexture;
+	}
+
+	const Texture& FrameBuffer::depthTexture() const
+	{
+		return mDepthTexture;
+	}
+
 	void FrameBuffer::reset()
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -238,5 +256,7 @@ namespace wgfx
 
 		mHandle = InvalidHandle;
 		mGeneration = 0;
+		mColorTexture.reset();
+		mDepthTexture.reset();
 	}
 }

@@ -18,7 +18,6 @@
 	- [ ] Loading from image containers via `createTexture(Memory*)`
 - [x] Uniform
 - [x] FrameBuffer
-	- [ ] Accessor for owned textures for sampling
 	- [ ] Ratio-based creation
 	- [ ] Swap-chain/window creation and resize
 - [x] DynamicVertexBuffer

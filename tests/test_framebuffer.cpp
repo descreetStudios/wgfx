@@ -72,6 +72,104 @@ TEST(framebuffer_creates_color_depth_target)
 	CHECK(framebuffer.valid());
 }
 
+TEST(framebuffer_exposes_owned_textures)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::FrameBuffer color{
+		wgfx::FrameBuffer::create(color_desc(16, 16)) };
+	REQUIRE(color.valid());
+	CHECK(color.colorTexture().valid());
+	CHECK(!color.depthTexture().valid());
+
+	wgfx::FrameBufferDesc desc{ color_desc(32, 16) };
+	desc.depthFormat = wgfx::TextureFormat::D24S8;
+
+	const wgfx::FrameBuffer colorDepth{ 
+		wgfx::FrameBuffer::create(desc) };
+	REQUIRE(colorDepth.valid());
+	CHECK(colorDepth.colorTexture().valid());
+	CHECK(colorDepth.depthTexture().valid());
+}
+
+TEST(framebuffer_does_not_expose_external_attachments)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto color = render_target(16, 16);
+	REQUIRE(color.valid());
+
+	const wgfx::FrameBufferAttachment attachment{ attach(color) };
+	const wgfx::FrameBuffer framebuffer{
+		wgfx::FrameBuffer::create(&attachment, 1) };
+	REQUIRE(framebuffer.valid());
+	CHECK(!framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
+}
+
+TEST(framebuffer_moves_owned_textures)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::FrameBufferDesc desc{ color_desc(16, 16) };
+	desc.depthFormat = wgfx::TextureFormat::D24S8;
+
+	auto first = wgfx::FrameBuffer::create(desc);
+	REQUIRE(first.valid());
+
+	wgfx::FrameBuffer moved{ std::move(first) };
+	CHECK(!first.valid());
+	CHECK(!first.colorTexture().valid());
+	CHECK(!first.depthTexture().valid());
+	CHECK(moved.colorTexture().valid());
+	CHECK(moved.depthTexture().valid());
+
+	auto second = wgfx::FrameBuffer::create(color_desc(8, 8));
+	REQUIRE(second.valid());
+	second = std::move(moved);
+	CHECK(second.colorTexture().valid());
+	CHECK(second.depthTexture().valid());
+	CHECK(!moved.colorTexture().valid());
+	CHECK(!moved.depthTexture().valid());
+}
+
+TEST(framebuffer_reset_releases_owned_textures)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto framebuffer = wgfx::FrameBuffer::create(color_desc(16, 16));
+	REQUIRE(framebuffer.valid());
+	REQUIRE(framebuffer.colorTexture().valid());
+
+	framebuffer.reset();
+	CHECK(!framebuffer.valid());
+	CHECK(!framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
+}
+
+TEST(framebuffer_owned_textures_die_with_device)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::FrameBufferDesc desc{ color_desc(16, 16) };
+	desc.depthFormat = wgfx::TextureFormat::D24S8;
+
+	auto framebuffer = wgfx::FrameBuffer::create(desc);
+	REQUIRE(framebuffer.valid());
+	REQUIRE(framebuffer.colorTexture().valid());
+	REQUIRE(framebuffer.depthTexture().valid());
+
+	device->shutdown();
+	CHECK(!framebuffer.valid());
+	CHECK(!framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
+}
+
 TEST(framebuffer_creates_from_attachments)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -294,6 +392,8 @@ TEST(framebuffer_requires_bgfx_backend)
 
 	wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
 	CHECK(!framebuffer.valid());
+	CHECK(!framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
 
 	const wgfx::FrameBufferAttachment attachment;
 	CHECK(!wgfx::FrameBuffer::create(&attachment, 1).valid());

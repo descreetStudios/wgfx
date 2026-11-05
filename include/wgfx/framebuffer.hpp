@@ -84,6 +84,9 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		const Texture& colorTexture() const;
+		const Texture& depthTexture() const;
+
 	private:
 		friend struct detail::FrameBufferAccess;
 
@@ -91,5 +94,7 @@ namespace wgfx
 
 		u16 mHandle{ InvalidHandle };
 		u32 mGeneration{ 0 };
+		Texture mColorTexture;
+		Texture mDepthTexture;
 	};
 }
