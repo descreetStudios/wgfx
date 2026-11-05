@@ -57,6 +57,7 @@ namespace wgfx
 	{
 		u16 width{ 0 };
 		u16 height{ 0 };
+		BackbufferRatio ratio{ BackbufferRatio::Explicit };
 		TextureFormat colorFormat{ TextureFormat::RGBA8 };
 
 		// TextureFormat::Count disables the depth-stencil attachment.

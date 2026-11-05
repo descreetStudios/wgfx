@@ -18,7 +18,7 @@
 	- [ ] Loading from image containers via `createTexture(Memory*)`
 - [x] Uniform
 - [x] FrameBuffer
-	- [ ] Ratio-based creation
+	- [x] Ratio-based creation
 	- [ ] Swap-chain/window creation and resize
 - [x] DynamicVertexBuffer
 - [x] DynamicIndexBuffer

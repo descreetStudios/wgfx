@@ -163,6 +163,17 @@ namespace wgfx
 		TextureCube,
 	};
 
+	enum class BackbufferRatio : u8
+	{
+		Equal,
+		Half,
+		Quarter,
+		Eighth,
+		Sixteenth,
+		Double,
+		Explicit,
+	};
+
 	struct TextureDesc
 	{
 		u16 width{ 0 };
@@ -172,6 +183,7 @@ namespace wgfx
 		TextureFlags flags{ TextureFlags::None };
 		bool mipmapped{ false };
 
+		BackbufferRatio ratio{ BackbufferRatio::Explicit };
 		TextureType type{ TextureType::Texture2D };
 		u16 depth{ 1 };
 	};

@@ -170,6 +170,37 @@ TEST(framebuffer_owned_textures_die_with_device)
 	CHECK(!framebuffer.depthTexture().valid());
 }
 
+TEST(framebuffer_creates_from_backbuffer_ratio)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::FrameBufferDesc desc;
+	desc.ratio = wgfx::BackbufferRatio::Half;
+	desc.colorFormat = wgfx::TextureFormat::RGBA8;
+
+	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
+	REQUIRE(framebuffer.valid());
+	CHECK(framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
+}
+
+TEST(framebuffer_creates_ratio_with_depth)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::FrameBufferDesc desc;
+	desc.ratio = wgfx::BackbufferRatio::Quarter;
+	desc.colorFormat = wgfx::TextureFormat::RGBA8;
+	desc.depthFormat = wgfx::TextureFormat::D24S8;
+
+	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
+	REQUIRE(framebuffer.valid());
+	CHECK(framebuffer.colorTexture().valid());
+	CHECK(framebuffer.depthTexture().valid());
+}
+
 TEST(framebuffer_creates_from_attachments)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -394,6 +425,10 @@ TEST(framebuffer_requires_bgfx_backend)
 	CHECK(!framebuffer.valid());
 	CHECK(!framebuffer.colorTexture().valid());
 	CHECK(!framebuffer.depthTexture().valid());
+
+	desc = {};
+	desc.ratio = wgfx::BackbufferRatio::Half;
+	CHECK(!wgfx::FrameBuffer::create(desc).valid());
 
 	const wgfx::FrameBufferAttachment attachment;
 	CHECK(!wgfx::FrameBuffer::create(&attachment, 1).valid());

@@ -24,6 +24,21 @@ namespace wgfx
 		static_assert(static_cast<u16>(TextureFormat::D0S8) == bgfx::TextureFormat::D0S8,
 			"TextureFormat::D0S8 must mirror bgfx::TextureFormat::D0S8");
 
+		static_assert(static_cast<u8>(BackbufferRatio::Equal) == bgfx::BackbufferRatio::Equal,
+			"BackbufferRatio::Equal must mirror bgfx::BackbufferRatio::Equal");
+		static_assert(static_cast<u8>(BackbufferRatio::Half) == bgfx::BackbufferRatio::Half,
+			"BackbufferRatio::Half must mirror bgfx::BackbufferRatio::Half");
+		static_assert(static_cast<u8>(BackbufferRatio::Quarter) == bgfx::BackbufferRatio::Quarter,
+			"BackbufferRatio::Quarter must mirror bgfx::BackbufferRatio::Quarter");
+		static_assert(static_cast<u8>(BackbufferRatio::Eighth) == bgfx::BackbufferRatio::Eighth,
+			"BackbufferRatio::Eighth must mirror bgfx::BackbufferRatio::Eighth");
+		static_assert(static_cast<u8>(BackbufferRatio::Sixteenth) == bgfx::BackbufferRatio::Sixteenth,
+			"BackbufferRatio::Sixteenth must mirror bgfx::BackbufferRatio::Sixteenth");
+		static_assert(static_cast<u8>(BackbufferRatio::Double) == bgfx::BackbufferRatio::Double,
+			"BackbufferRatio::Double must mirror bgfx::BackbufferRatio::Double");
+		static_assert(static_cast<u8>(BackbufferRatio::Explicit) == bgfx::BackbufferRatio::Count,
+			"BackbufferRatio::Explicit must map to bgfx::BackbufferRatio::Count");
+
 		static_assert(static_cast<u64>(TextureFlags::None) == BGFX_TEXTURE_NONE,
 			"TextureFlags::None must mirror BGFX_TEXTURE_NONE");
 		static_assert(static_cast<u64>(TextureFlags::MsaaSample) == BGFX_TEXTURE_MSAA_SAMPLE,
@@ -56,6 +71,13 @@ namespace wgfx
 		bgfx::TextureFormat::Enum to_bgfx(TextureFormat format)
 		{
 			return static_cast<bgfx::TextureFormat::Enum>(format);
+		}
+
+		bgfx::BackbufferRatio::Enum to_bgfx(BackbufferRatio ratio)
+		{
+			return ratio == BackbufferRatio::Explicit
+				? bgfx::BackbufferRatio::Count
+				: static_cast<bgfx::BackbufferRatio::Enum>(ratio);
 		}
 	} // anonymous namespace
 #endif
@@ -95,99 +117,125 @@ namespace wgfx
 
 #if defined(WGFX_BACKEND_BGFX)
 		const u16 formatIndex{ static_cast<u16>(desc.format) };
-		if (desc.width == 0
-		|| desc.height == 0
-		|| desc.layers == 0
+		if (desc.layers == 0
 		|| formatIndex >= static_cast<u16>(TextureFormat::Count))
 		{
 			return result;
 		}
 
+		const bool ratioBased{ desc.ratio != BackbufferRatio::Explicit };
 		const bool is3D{ desc.type == TextureType::Texture3D };
 		const bool isCube{ desc.type == TextureType::TextureCube };
 		if (desc.type != TextureType::Texture2D && !is3D && !isCube)
 			return result;
 
-		if (is3D)
+		if (ratioBased)
 		{
-			if (desc.depth == 0 || desc.layers != 1)
+			if (is3D || isCube || desc.depth != 1
+			|| data != nullptr || size != 0)
+			{
 				return result;
+			}
 		}
-		else if (isCube)
+		else
 		{
-			if (desc.depth != 1 || desc.width != desc.height)
+			if (desc.width == 0 || desc.height == 0)
 				return result;
-		}
-		else if (desc.depth != 1)
-		{
-			return result;
-		}
 
-		if ((data == nullptr) != (size == 0))
-			return result;
+			if (is3D)
+			{
+				if (desc.depth == 0 || desc.layers != 1)
+					return result;
+			}
+			else if (isCube)
+			{
+				if (desc.depth != 1 || desc.width != desc.height)
+					return result;
+			}
+			else if (desc.depth != 1)
+			{
+				return result;
+			}
+
+			if ((data == nullptr) != (size == 0))
+				return result;
+		}
 
 		const u32 generation{ detail::device_generation() };
 		if (!detail::device_active() || generation == 0)
 			return result;
 
 		const bgfx::TextureFormat::Enum format{ to_bgfx(desc.format) };
-		const u16 depth{ is3D ? desc.depth : u16{ 1 } };
-		const u16 numLayers{ is3D ? u16{ 1 } : desc.layers };
-
-		bgfx::TextureInfo info{};
-		bgfx::calcTextureSize(
-			info,
-			desc.width,
-			desc.height,
-			depth,
-			isCube,
-			desc.mipmapped,
-			numLayers,
-			format);
-
-		const bgfx::Memory* memory{ nullptr };
-		if (data)
-		{
-			if (size != info.storageSize)
-				return result;
-
-			memory = bgfx::copy(data, size);
-			if (!memory)
-				return result;
-		}
-
 		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
-		if (is3D)
+
+		if (ratioBased)
 		{
-			handle = bgfx::createTexture3D(
-				desc.width,
-				desc.height,
-				desc.depth,
-				desc.mipmapped,
-				format,
-				static_cast<u64>(desc.flags),
-				memory);
-		}
-		else if (isCube)
-		{
-			handle = bgfx::createTextureCube(
-				desc.width,
+			handle = bgfx::createTexture2D(
+				to_bgfx(desc.ratio),
 				desc.mipmapped,
 				desc.layers,
 				format,
-				static_cast<u64>(desc.flags),
-				memory);
+				static_cast<u64>(desc.flags));
 		}
 		else
 		{
-			handle = bgfx::createTexture2D(
+			const u16 depth{ is3D ? desc.depth : u16{ 1 } };
+			const u16 numLayers{ is3D ? u16{ 1 } : desc.layers };
+
+			bgfx::TextureInfo info{};
+			bgfx::calcTextureSize(
+				info,
 				desc.width,
 				desc.height,
+				depth,
+				isCube,
 				desc.mipmapped,
-				desc.layers,
-				format,
-				static_cast<u64>(desc.flags),
-				memory);
+				numLayers,
+				format);
+
+			const bgfx::Memory* memory{ nullptr };
+			if (data)
+			{
+				if (size != info.storageSize)
+					return result;
+
+				memory = bgfx::copy(data, size);
+				if (!memory)
+					return result;
+			}
+
+			if (is3D)
+			{
+				handle = bgfx::createTexture3D(
+					desc.width,
+					desc.height,
+					desc.depth,
+					desc.mipmapped,
+					format,
+					static_cast<u64>(desc.flags),
+					memory);
+			}
+			else if (isCube)
+			{
+				handle = bgfx::createTextureCube(
+					desc.width,
+					desc.mipmapped,
+					desc.layers,
+					format,
+					static_cast<u64>(desc.flags),
+					memory);
+			}
+			else
+			{
+				handle = bgfx::createTexture2D(
+					desc.width,
+					desc.height,
+					desc.mipmapped,
+					desc.layers,
+					format,
+					static_cast<u64>(desc.flags),
+					memory);
+			}
 		}
 
 		if (!bgfx::isValid(handle))

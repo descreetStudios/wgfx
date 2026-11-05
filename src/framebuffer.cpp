@@ -114,8 +114,8 @@ namespace wgfx
 		FrameBuffer result;
 
 #if defined(WGFX_BACKEND_BGFX)
-		if (desc.width == 0
-		|| desc.height == 0
+		const bool ratioBased{ desc.ratio != BackbufferRatio::Explicit };
+		if ((!ratioBased && (desc.width == 0 || desc.height == 0))
 		|| desc.colorFormat >= TextureFormat::Count
 		|| is_depth_format(desc.colorFormat))
 		{
@@ -136,6 +136,7 @@ namespace wgfx
 		TextureDesc colorDesc;
 		colorDesc.width = desc.width;
 		colorDesc.height = desc.height;
+		colorDesc.ratio = desc.ratio;
 		colorDesc.format = desc.colorFormat;
 		colorDesc.flags = render_target_flags(desc.flags);
 

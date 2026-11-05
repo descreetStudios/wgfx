@@ -227,6 +227,45 @@ TEST(texture_rejects_invalid_cube_input)
 		sizeof(pixels) - 1).valid());
 }
 
+TEST(texture_creates_from_backbuffer_ratio)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::TextureDesc desc;
+	desc.ratio = wgfx::BackbufferRatio::Half;
+	desc.format = wgfx::TextureFormat::RGBA8;
+	CHECK(wgfx::Texture::create(desc).valid());
+
+	desc = {};
+	desc.ratio = wgfx::BackbufferRatio::Double;
+	desc.layers = 2;
+	desc.mipmapped = true;
+	CHECK(wgfx::Texture::create(desc).valid());
+}
+
+TEST(texture_rejects_invalid_ratio_input)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const u8 pixel[4]{};
+	wgfx::TextureDesc desc;
+	desc.ratio = wgfx::BackbufferRatio::Half;
+
+	CHECK(!wgfx::Texture::create(
+		desc, pixel, sizeof(pixel)).valid());
+
+	desc.type = wgfx::TextureType::Texture3D;
+	desc.depth = 2;
+	CHECK(!wgfx::Texture::create(desc).valid());
+
+	desc = {};
+	desc.ratio = wgfx::BackbufferRatio::Half;
+	desc.type = wgfx::TextureType::TextureCube;
+	CHECK(!wgfx::Texture::create(desc).valid());
+}
+
 TEST(texture_creates_uninitialized_render_target)
 {
 	auto device = wgfx::Device::create(headless_desc());
