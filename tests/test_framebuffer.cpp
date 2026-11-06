@@ -89,8 +89,8 @@ TEST(framebuffer_exposes_owned_textures)
 	const wgfx::FrameBuffer color{
 		wgfx::FrameBuffer::create(color_desc(16, 16)) };
 	REQUIRE(color.valid());
-	CHECK(color.colorTexture().valid());
-	CHECK(!color.depthTexture().valid());
+	CHECK(color.color_texture().valid());
+	CHECK(!color.depth_texture().valid());
 
 	wgfx::FrameBufferDesc desc{ color_desc(32, 16) };
 	desc.depthFormat = wgfx::TextureFormat::D24S8;
@@ -98,8 +98,8 @@ TEST(framebuffer_exposes_owned_textures)
 	const wgfx::FrameBuffer colorDepth{ 
 		wgfx::FrameBuffer::create(desc) };
 	REQUIRE(colorDepth.valid());
-	CHECK(colorDepth.colorTexture().valid());
-	CHECK(colorDepth.depthTexture().valid());
+	CHECK(colorDepth.color_texture().valid());
+	CHECK(colorDepth.depth_texture().valid());
 }
 
 TEST(framebuffer_does_not_expose_external_attachments)
@@ -114,8 +114,8 @@ TEST(framebuffer_does_not_expose_external_attachments)
 	const wgfx::FrameBuffer framebuffer{
 		wgfx::FrameBuffer::create(&attachment, 1) };
 	REQUIRE(framebuffer.valid());
-	CHECK(!framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(!framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_moves_owned_textures)
@@ -131,18 +131,18 @@ TEST(framebuffer_moves_owned_textures)
 
 	wgfx::FrameBuffer moved{ std::move(first) };
 	CHECK(!first.valid());
-	CHECK(!first.colorTexture().valid());
-	CHECK(!first.depthTexture().valid());
-	CHECK(moved.colorTexture().valid());
-	CHECK(moved.depthTexture().valid());
+	CHECK(!first.color_texture().valid());
+	CHECK(!first.depth_texture().valid());
+	CHECK(moved.color_texture().valid());
+	CHECK(moved.depth_texture().valid());
 
 	auto second = wgfx::FrameBuffer::create(color_desc(8, 8));
 	REQUIRE(second.valid());
 	second = std::move(moved);
-	CHECK(second.colorTexture().valid());
-	CHECK(second.depthTexture().valid());
-	CHECK(!moved.colorTexture().valid());
-	CHECK(!moved.depthTexture().valid());
+	CHECK(second.color_texture().valid());
+	CHECK(second.depth_texture().valid());
+	CHECK(!moved.color_texture().valid());
+	CHECK(!moved.depth_texture().valid());
 }
 
 TEST(framebuffer_reset_releases_owned_textures)
@@ -152,12 +152,12 @@ TEST(framebuffer_reset_releases_owned_textures)
 
 	auto framebuffer = wgfx::FrameBuffer::create(color_desc(16, 16));
 	REQUIRE(framebuffer.valid());
-	REQUIRE(framebuffer.colorTexture().valid());
+	REQUIRE(framebuffer.color_texture().valid());
 
 	framebuffer.reset();
 	CHECK(!framebuffer.valid());
-	CHECK(!framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(!framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_owned_textures_die_with_device)
@@ -170,13 +170,13 @@ TEST(framebuffer_owned_textures_die_with_device)
 
 	auto framebuffer = wgfx::FrameBuffer::create(desc);
 	REQUIRE(framebuffer.valid());
-	REQUIRE(framebuffer.colorTexture().valid());
-	REQUIRE(framebuffer.depthTexture().valid());
+	REQUIRE(framebuffer.color_texture().valid());
+	REQUIRE(framebuffer.depth_texture().valid());
 
 	device->shutdown();
 	CHECK(!framebuffer.valid());
-	CHECK(!framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(!framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_creates_from_backbuffer_ratio)
@@ -190,8 +190,8 @@ TEST(framebuffer_creates_from_backbuffer_ratio)
 
 	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
 	REQUIRE(framebuffer.valid());
-	CHECK(framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_creates_ratio_with_depth)
@@ -206,8 +206,8 @@ TEST(framebuffer_creates_ratio_with_depth)
 
 	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
 	REQUIRE(framebuffer.valid());
-	CHECK(framebuffer.colorTexture().valid());
-	CHECK(framebuffer.depthTexture().valid());
+	CHECK(framebuffer.color_texture().valid());
+	CHECK(framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_creates_from_attachments)
@@ -350,8 +350,8 @@ TEST(framebuffer_creates_swap_chain)
 	REQUIRE(framebuffer.valid());
 
 	// A swap chain cannot be sampled through the owned texture accessors.
-	CHECK(!framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(!framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 }
 
 TEST(framebuffer_updates_swap_chain)
@@ -365,13 +365,13 @@ TEST(framebuffer_updates_swap_chain)
 
 	wgfx::SwapChainDesc desc{ swap_chain_desc(128, 96) };
 	desc.flags = wgfx::SwapChainFlags::SrgbBackbuffer;
-	CHECK(framebuffer.updateSwapChain(desc));
+	CHECK(framebuffer.update_swap_chain(desc));
 	CHECK(framebuffer.valid());
 
 	// A regular render-target frame buffer is not a swap chain.
 	auto regular = wgfx::FrameBuffer::create(color_desc(16, 16));
 	REQUIRE(regular.valid());
-	CHECK(!regular.updateSwapChain(swap_chain_desc(16, 16)));
+	CHECK(!regular.update_swap_chain(swap_chain_desc(16, 16)));
 }
 
 TEST(framebuffer_rejects_invalid_swap_chain)
@@ -393,7 +393,7 @@ TEST(framebuffer_rejects_invalid_swap_chain)
 
 	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
 	REQUIRE(framebuffer.valid());
-	CHECK(!framebuffer.updateSwapChain(swap_chain_desc(0, 48)));
+	CHECK(!framebuffer.update_swap_chain(swap_chain_desc(0, 48)));
 }
 
 TEST(framebuffer_swap_chain_dies_with_device)
@@ -407,7 +407,7 @@ TEST(framebuffer_swap_chain_dies_with_device)
 
 	device->shutdown();
 	CHECK(!framebuffer.valid());
-	CHECK(!framebuffer.updateSwapChain(swap_chain_desc(64, 48)));
+	CHECK(!framebuffer.update_swap_chain(swap_chain_desc(64, 48)));
 }
 
 TEST(framebuffer_requires_active_device)
@@ -503,8 +503,8 @@ TEST(framebuffer_requires_bgfx_backend)
 
 	wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
 	CHECK(!framebuffer.valid());
-	CHECK(!framebuffer.colorTexture().valid());
-	CHECK(!framebuffer.depthTexture().valid());
+	CHECK(!framebuffer.color_texture().valid());
+	CHECK(!framebuffer.depth_texture().valid());
 
 	desc = {};
 	desc.ratio = wgfx::BackbufferRatio::Half;
@@ -519,7 +519,7 @@ TEST(framebuffer_requires_bgfx_backend)
 	wgfx::FrameBuffer swapChainBuffer{
 		wgfx::FrameBuffer::create(swapChain) };
 	CHECK(!swapChainBuffer.valid());
-	CHECK(!swapChainBuffer.updateSwapChain(swapChain));
+	CHECK(!swapChainBuffer.update_swap_chain(swapChain));
 
 	framebuffer.reset();
 }

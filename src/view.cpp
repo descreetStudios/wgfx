@@ -259,7 +259,7 @@ namespace wgfx
 		return valid() ? mId : InvalidId;
 	}
 
-	bool View::setRect(
+	bool View::set_rect(
 		i16 x,
 		i16 y,
 		u16 width,
@@ -284,7 +284,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setRect(i16 x, i16 y, BackbufferRatio ratio) const
+	bool View::set_rect(i16 x, i16 y, BackbufferRatio ratio) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || ratio == BackbufferRatio::Explicit)
@@ -300,7 +300,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setScissor(u16 x, u16 y, u16 width, u16 height) const
+	bool View::set_scissor(u16 x, u16 y, u16 width, u16 height) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid())
@@ -317,7 +317,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setClear(
+	bool View::set_clear(
 		ClearFlags flags,
 		u32 rgba,
 		float depth,
@@ -343,7 +343,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setFrameBuffer(const FrameBuffer* framebuffer) const
+	bool View::set_framebuffer(const FrameBuffer* framebuffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || (framebuffer && !framebuffer->valid()))
@@ -360,7 +360,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setTransform(const void* view, const void* projection) const
+	bool View::set_transform(const void* view, const void* projection) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || !view || !projection)
@@ -375,7 +375,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setMode(ViewMode mode) const
+	bool View::set_mode(ViewMode mode) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || static_cast<u8>(mode) >= static_cast<u8>(ViewMode::Count))
@@ -389,7 +389,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setName(const char* name) const
+	bool View::set_name(const char* name) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || !name)
@@ -403,7 +403,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::resetSettings() const
+	bool View::reset_settings() const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid())
@@ -429,12 +429,12 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setState(const RenderState& state) const
+	bool View::set_state(const RenderState& state) const
 	{
-		return setState(state.flags, state.rgba);
+		return set_state(state.flags, state.rgba);
 	}
 
-	bool View::setState(RenderStateFlags flags, u32 rgba) const
+	bool View::set_state(RenderStateFlags flags, u32 rgba) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid())
@@ -449,7 +449,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setVertexBuffer(u8 stream, const VertexBuffer& buffer) const
+	bool View::set_vertex_buffer(u8 stream, const VertexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || !buffer.valid() || !valid_stream(stream))
@@ -466,7 +466,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setVertexBuffer(
+	bool View::set_vertex_buffer(
 		u8 stream,
 		const VertexBuffer& buffer,
 		u32 startVertex,
@@ -496,7 +496,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setVertexBuffer(
+	bool View::set_vertex_buffer(
 		u8 stream,
 		const DynamicVertexBuffer& buffer) const
 	{
@@ -515,7 +515,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setVertexBuffer(
+	bool View::set_vertex_buffer(
 		u8 stream,
 		const DynamicVertexBuffer& buffer,
 		u32 startVertex,
@@ -545,7 +545,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setIndexBuffer(const IndexBuffer& buffer) const
+	bool View::set_index_buffer(const IndexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || !buffer.valid())
@@ -559,7 +559,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setIndexBuffer(
+	bool View::set_index_buffer(
 		const IndexBuffer& buffer,
 		u32 firstIndex,
 		u32 numIndices) const
@@ -581,7 +581,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setIndexBuffer(const DynamicIndexBuffer& buffer) const
+	bool View::set_index_buffer(const DynamicIndexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid() || !buffer.valid())
@@ -596,7 +596,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setIndexBuffer(
+	bool View::set_index_buffer(
 		const DynamicIndexBuffer& buffer,
 		u32 firstIndex,
 		u32 numIndices) const
@@ -618,7 +618,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setTexture(
+	bool View::set_texture(
 		u8 stage,
 		const Uniform& sampler,
 		const Texture& texture) const
@@ -645,7 +645,7 @@ namespace wgfx
 #endif
 	}
 
-	bool View::setTexture(
+	bool View::set_texture(
 		u8 stage,
 		const Uniform& sampler,
 		const Texture& texture,

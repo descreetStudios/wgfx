@@ -94,4 +94,4 @@ namespace wgfx
 	{
 		return valid() ? mCount : 0;
 	}
-} // namespace wgfx
+}

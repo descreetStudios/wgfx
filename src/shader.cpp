@@ -114,7 +114,7 @@ namespace wgfx
 		std::vector<bgfx::UniformHandle> handles(num);
 		bgfx::getShaderUniforms(handle, handles.data(), num);
 
-		for (u16 ii = 0; ii < num; ++ii)
+		for (u16 ii{ 0 }; ii < num; ++ii)
 		{
 			bgfx::UniformInfo info{};
 			bgfx::getUniformInfo(handles[ii], info);

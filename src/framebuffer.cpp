@@ -331,7 +331,7 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
-	bool FrameBuffer::updateSwapChain(const SwapChainDesc& desc)
+	bool FrameBuffer::update_swap_chain(const SwapChainDesc& desc)
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
@@ -352,12 +352,12 @@ namespace wgfx
 #endif
 	}
 
-	const Texture& FrameBuffer::colorTexture() const
+	const Texture& FrameBuffer::color_texture() const
 	{
 		return mColorTexture;
 	}
 
-	const Texture& FrameBuffer::depthTexture() const
+	const Texture& FrameBuffer::depth_texture() const
 	{
 		return mDepthTexture;
 	}
