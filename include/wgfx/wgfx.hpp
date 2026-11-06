@@ -17,3 +17,5 @@
 #include <wgfx/framebuffer.hpp>
 #include <wgfx/indirect_buffer.hpp>
 #include <wgfx/occlusion_query.hpp>
+#include <wgfx/render_state.hpp>
+#include <wgfx/view.hpp>
