@@ -37,4 +37,4 @@ namespace wgfx
 		u32 mGeneration{ 0 };
 		u32 mCount{ 0 };
 	};
-} // namespace wgfx
+}

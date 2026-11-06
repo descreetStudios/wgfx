@@ -113,7 +113,7 @@ namespace wgfx
 		Max = 0x0000000040000000,
 	};
 
-	constexpr RenderStateFlags blendFuncSeparate(
+	constexpr RenderStateFlags belnd_func_separate(
 		BlendFactor srcRgb,
 		BlendFactor dstRgb,
 		BlendFactor srcAlpha,
@@ -126,14 +126,14 @@ namespace wgfx
 		return static_cast<RenderStateFlags>(rgb | (alpha << 8));
 	}
 
-	constexpr RenderStateFlags blendFunc(
+	constexpr RenderStateFlags blend_func(
 		BlendFactor src,
 		BlendFactor dst) noexcept
 	{
-		return blendFuncSeparate(src, dst, src, dst);
+		return belnd_func_separate(src, dst, src, dst);
 	}
 
-	constexpr RenderStateFlags blendEquationSeparate(
+	constexpr RenderStateFlags blend_equation_separate(
 		BlendEquation rgb,
 		BlendEquation alpha) noexcept
 	{
@@ -141,39 +141,39 @@ namespace wgfx
 			static_cast<u64>(rgb) | (static_cast<u64>(alpha) << 3));
 	}
 
-	constexpr RenderStateFlags blendEquation(BlendEquation equation) noexcept
+	constexpr RenderStateFlags blend_equation(BlendEquation equation) noexcept
 	{
-		return blendEquationSeparate(equation, equation);
+		return blend_equation_separate(equation, equation);
 	}
 
-	constexpr RenderStateFlags alphaRef(u8 value) noexcept
+	constexpr RenderStateFlags alpha_ref(u8 value) noexcept
 	{
 		return static_cast<RenderStateFlags>(
 			static_cast<u64>(value) << 40);
 	}
 
-	constexpr RenderStateFlags pointSize(u8 value) noexcept
+	constexpr RenderStateFlags point_size(u8 value) noexcept
 	{
 		return static_cast<RenderStateFlags>(
 			(static_cast<u64>(value) & 0x0f) << 52);
 	}
 
 	inline constexpr RenderStateFlags BlendAdd{
-		blendFunc(BlendFactor::One, BlendFactor::One) };
+		blend_func(BlendFactor::One, BlendFactor::One) };
 	inline constexpr RenderStateFlags BlendAlpha{
-		blendFunc(BlendFactor::SrcAlpha, BlendFactor::InvSrcAlpha) };
+		blend_func(BlendFactor::SrcAlpha, BlendFactor::InvSrcAlpha) };
 	inline constexpr RenderStateFlags BlendNormal{
-		blendFunc(BlendFactor::One, BlendFactor::InvSrcAlpha) };
+		blend_func(BlendFactor::One, BlendFactor::InvSrcAlpha) };
 	inline constexpr RenderStateFlags BlendMultiply{
-		blendFunc(BlendFactor::DstColor, BlendFactor::Zero) };
+		blend_func(BlendFactor::DstColor, BlendFactor::Zero) };
 	inline constexpr RenderStateFlags BlendScreen{
-		blendFunc(BlendFactor::One, BlendFactor::InvSrcColor) };
+		blend_func(BlendFactor::One, BlendFactor::InvSrcColor) };
 	inline constexpr RenderStateFlags BlendDarken{
-		blendFunc(BlendFactor::One, BlendFactor::One)
-		| blendEquation(BlendEquation::Min) };
+		blend_func(BlendFactor::One, BlendFactor::One)
+		| blend_equation(BlendEquation::Min) };
 	inline constexpr RenderStateFlags BlendLighten{
-		blendFunc(BlendFactor::One, BlendFactor::One)
-		| blendEquation(BlendEquation::Max) };
+		blend_func(BlendFactor::One, BlendFactor::One)
+		| blend_equation(BlendEquation::Max) };
 
 	struct RenderState
 	{
@@ -185,7 +185,6 @@ namespace wgfx
 			| RenderStateFlags::CullCw
 			| RenderStateFlags::Msaa };
 
-		// Blend factor used by BlendFactor and BlendInvFactor.
 		u32 rgba{ 0 };
 	};
 
@@ -246,7 +245,7 @@ namespace wgfx
 		return lhs;
 	}
 
-	constexpr SamplerFlags borderColor(u8 index) noexcept
+	constexpr SamplerFlags border_color(u8 index) noexcept
 	{
 		return static_cast<SamplerFlags>(
 			(static_cast<u32>(index) & 0x0f) << 24);
@@ -282,4 +281,4 @@ namespace wgfx
 		lhs = lhs | rhs;
 		return lhs;
 	}
-} // namespace wgfx
+}

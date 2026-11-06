@@ -87,10 +87,10 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
-		bool updateSwapChain(const SwapChainDesc& desc);
+		bool update_swap_chain(const SwapChainDesc& desc);
 
-		const Texture& colorTexture() const;
-		const Texture& depthTexture() const;
+		const Texture& color_texture() const;
+		const Texture& depth_texture() const;
 
 	private:
 		friend struct detail::FrameBufferAccess;

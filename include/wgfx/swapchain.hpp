@@ -50,4 +50,4 @@ namespace wgfx
 		u8 numBackBuffers{ 1 };
 		u8 maxFrameLatency{ 0 };
 	};
-} // namespace wgfx
+}

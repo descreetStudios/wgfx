@@ -126,13 +126,8 @@ namespace wgfx
 		{
 			return bgfx::TextureRegion{
 				detail::TextureAccess::native(*region.texture),
-				region.mip,
-				region.x,
-				region.y,
-				region.z,
-				region.width,
-				region.height,
-				region.depth,
+				region.mip, region.x, region.y, region.z,
+				region.width, region.height, region.depth,
 			};
 		}
 
@@ -205,7 +200,7 @@ namespace wgfx
 #if defined(WGFX_BACKEND_BGFX)
 		const u16 formatIndex{ static_cast<u16>(desc.format) };
 		if (desc.layers == 0
-		|| formatIndex >= static_cast<u16>(TextureFormat::Count))
+			|| formatIndex >= static_cast<u16>(TextureFormat::Count))
 		{
 			return result;
 		}
@@ -219,7 +214,7 @@ namespace wgfx
 		if (ratioBased)
 		{
 			if (is3D || isCube || desc.depth != 1
-			|| data != nullptr || size != 0)
+				|| data != nullptr || size != 0)
 			{
 				return result;
 			}
@@ -270,15 +265,10 @@ namespace wgfx
 			const u16 numLayers{ is3D ? u16{ 1 } : desc.layers };
 
 			bgfx::TextureInfo info{};
-			bgfx::calcTextureSize(
-				info,
-				desc.width,
-				desc.height,
-				depth,
-				isCube,
-				desc.mipmapped,
-				numLayers,
-				format);
+			bgfx::calcTextureSize(info,
+				desc.width, desc.height,
+				depth, isCube, desc.mipmapped,
+				numLayers, format);
 
 			const bgfx::Memory* memory{ nullptr };
 			if (data)
@@ -294,33 +284,25 @@ namespace wgfx
 			if (is3D)
 			{
 				handle = bgfx::createTexture3D(
-					desc.width,
-					desc.height,
-					desc.depth,
-					desc.mipmapped,
-					format,
-					static_cast<u64>(desc.flags),
+					desc.width, desc.height,
+					desc.depth, desc.mipmapped,
+					format, static_cast<u64>(desc.flags),
 					memory);
 			}
 			else if (isCube)
 			{
 				handle = bgfx::createTextureCube(
-					desc.width,
-					desc.mipmapped,
-					desc.layers,
-					format,
+					desc.width, desc.mipmapped,
+					desc.layers, format,
 					static_cast<u64>(desc.flags),
 					memory);
 			}
 			else
 			{
 				handle = bgfx::createTexture2D(
-					desc.width,
-					desc.height,
-					desc.mipmapped,
-					desc.layers,
-					format,
-					static_cast<u64>(desc.flags),
+					desc.width, desc.height,
+					desc.mipmapped, desc.layers,
+					format, static_cast<u64>(desc.flags),
 					memory);
 			}
 		}
@@ -333,10 +315,8 @@ namespace wgfx
 		result.mDesc = desc;
 		result.mNumMips = ratioBased
 			? 0
-			: calc_num_mips(
-				desc.mipmapped,
-				desc.width,
-				desc.height,
+			: calc_num_mips(desc.mipmapped,
+				desc.width, desc.height,
 				is3D ? desc.depth : u16{ 1 });
 		result.mImmutable = data != nullptr;
 		result.mDescKnown = true;
@@ -350,10 +330,8 @@ namespace wgfx
 	}
 
 	Texture Texture::create(
-		const void* data,
-		u32 size,
-		TextureFlags flags,
-		u8 skip)
+		const void* data, u32 size,
+		TextureFlags flags, u8 skip)
 	{
 		Texture result;
 
@@ -397,18 +375,12 @@ namespace wgfx
 	}
 
 	bool Texture::region_valid(
-		u8 mip,
-		u16 x,
-		u16 y,
-		u16 z,
-		u16 width,
-		u16 height,
-		u16 depth) const
+		u8 mip, u16 x, u16 y, u16 z,
+		u16 width, u16 height, u16 depth) const
 	{
 		if (!mip_valid(mip))
 			return false;
 
-		// Ratio-based and container textures do not expose their dimensions.
 		if (mDesc.width == 0 || mDesc.height == 0)
 			return true;
 
@@ -434,24 +406,16 @@ namespace wgfx
 			&& region_within(mipDepth, z, depth);
 	}
 
-	bool Texture::update2D(
-		u16 layer,
-		u8 mip,
-		u16 x,
-		u16 y,
-		u16 width,
-		u16 height,
-		const void* data,
-		u32 size,
-		u16 pitch)
+	bool Texture::update_2d(
+		u16 layer, u8 mip, u16 x, u16 y,
+		u16 width, u16 height, const void* data,
+		u32 size, u16 pitch)
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| mImmutable
-		|| !data
-		|| size == 0
-		|| width == 0
-		|| height == 0)
+			|| mImmutable || !data
+			|| size == 0 || width == 0
+			|| height == 0)
 		{
 			return false;
 		}
@@ -471,14 +435,8 @@ namespace wgfx
 
 		bgfx::updateTexture2D(
 			detail::TextureAccess::native(*this),
-			layer,
-			mip,
-			x,
-			y,
-			width,
-			height,
-			memory,
-			pitch);
+			layer, mip, x, y, width, height,
+			memory, pitch);
 		return true;
 #else
 		(void)layer;
@@ -494,25 +452,17 @@ namespace wgfx
 #endif
 	}
 
-	bool Texture::update3D(
-		u8 mip,
-		u16 x,
-		u16 y,
-		u16 z,
-		u16 width,
-		u16 height,
-		u16 depth,
-		const void* data,
-		u32 size)
+	bool Texture::update_3d(
+		u8 mip, u16 x, u16 y, u16 z,
+		u16 width, u16 height, u16 depth,
+		const void* data, u32 size)
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| mImmutable
-		|| !data
-		|| size == 0
-		|| width == 0
-		|| height == 0
-		|| depth == 0)
+			|| mImmutable
+			|| !data || size == 0
+			|| width == 0 || height == 0
+			|| depth == 0)
 		{
 			return false;
 		}
@@ -529,13 +479,7 @@ namespace wgfx
 
 		bgfx::updateTexture3D(
 			detail::TextureAccess::native(*this),
-			mip,
-			x,
-			y,
-			z,
-			width,
-			height,
-			depth,
+			mip, x, y, z, width, height, depth,
 			memory);
 		return true;
 #else
@@ -552,26 +496,17 @@ namespace wgfx
 #endif
 	}
 
-	bool Texture::updateCube(
-		u16 layer,
-		u8 side,
-		u8 mip,
-		u16 x,
-		u16 y,
-		u16 width,
-		u16 height,
-		const void* data,
-		u32 size,
-		u16 pitch)
+	bool Texture::update_cube(
+		u16 layer, u8 side, u8 mip,
+		u16 x, u16 y, u16 width, u16 height,
+		const void* data, u32 size, u16 pitch)
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| mImmutable
-		|| !data
-		|| size == 0
-		|| width == 0
-		|| height == 0
-		|| side > 5)
+			|| mImmutable
+			|| !data || size == 0
+			|| width == 0 || height == 0
+			|| side > 5)
 		{
 			return false;
 		}
@@ -591,15 +526,8 @@ namespace wgfx
 
 		bgfx::updateTextureCube(
 			detail::TextureAccess::native(*this),
-			layer,
-			side,
-			mip,
-			x,
-			y,
-			width,
-			height,
-			memory,
-			pitch);
+			layer, side, mip, x, y, width, height,
+			memory, pitch);
 		return true;
 #else
 		(void)layer;
@@ -620,8 +548,8 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !data
-		|| (mDesc.flags & TextureFlags::ReadBack) == TextureFlags::None)
+			|| !data
+			|| (mDesc.flags & TextureFlags::ReadBack) == TextureFlags::None)
 		{
 			return 0;
 		}
@@ -631,13 +559,7 @@ namespace wgfx
 
 		const bgfx::TextureRegion region{
 			detail::TextureAccess::native(*this),
-			mip,
-			0,
-			0,
-			layer,
-			0,
-			0,
-			0,
+			mip, 0, 0, layer, 0, 0, 0,
 		};
 
 		return bgfx::read(region, data);
@@ -665,37 +587,29 @@ namespace wgfx
 			return false;
 
 		if (dst.mImmutable
-		|| (dst.mDesc.flags & TextureFlags::BlitDestination) == TextureFlags::None)
+			|| (dst.mDesc.flags & TextureFlags::BlitDestination) == TextureFlags::None)
 		{
 			return false;
 		}
 
 		if (dst.mDescKnown
-		&& src.mDescKnown
-		&& dst.mDesc.format != src.mDesc.format)
+			&& src.mDescKnown
+			&& dst.mDesc.format != src.mDesc.format)
 		{
 			return false;
 		}
 
-		if (!dst.region_valid(
-			dstRegion.mip,
-			dstRegion.x,
-			dstRegion.y,
-			dstRegion.z,
-			dstRegion.width,
-			dstRegion.height,
+		if (!dst.region_valid(dstRegion.mip,
+			dstRegion.x, dstRegion.y, dstRegion.z,
+			dstRegion.width, dstRegion.height,
 			dstRegion.depth))
 		{
 			return false;
 		}
 
-		if (!src.region_valid(
-			srcRegion.mip,
-			srcRegion.x,
-			srcRegion.y,
-			srcRegion.z,
-			srcRegion.width,
-			srcRegion.height,
+		if (!src.region_valid(srcRegion.mip,
+			srcRegion.x, srcRegion.y, srcRegion.z,
+			srcRegion.width, srcRegion.height,
 			srcRegion.depth))
 		{
 			return false;

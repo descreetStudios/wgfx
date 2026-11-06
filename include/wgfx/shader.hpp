@@ -37,8 +37,6 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
-		// Returns the number of non-predefined uniforms used by the shader.
-		// When `uniforms` is non-null, up to `max` entries are filled.
 		u16 uniforms(ShaderUniformInfo* uniforms = nullptr, u16 max = 0) const;
 
 	private:

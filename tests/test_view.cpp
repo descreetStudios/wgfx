@@ -54,16 +54,16 @@ TEST(render_state_composes)
 	CHECK((mutableState & wgfx::RenderStateFlags::WriteZ)
 		== wgfx::RenderStateFlags::WriteZ);
 
-	CHECK(wgfx::blendFunc(wgfx::BlendFactor::SrcAlpha, wgfx::BlendFactor::InvSrcAlpha)
+	CHECK(wgfx::blend_func(wgfx::BlendFactor::SrcAlpha, wgfx::BlendFactor::InvSrcAlpha)
 		== wgfx::BlendAlpha);
-	CHECK(wgfx::blendFunc(wgfx::BlendFactor::One, wgfx::BlendFactor::One)
+	CHECK(wgfx::blend_func(wgfx::BlendFactor::One, wgfx::BlendFactor::One)
 		== wgfx::BlendAdd);
 	const u64 subEquation{ static_cast<u64>(
 		wgfx::RenderStateFlags::BlendEquationSub) };
-	CHECK(wgfx::blendEquation(wgfx::BlendEquation::Sub)
+	CHECK(wgfx::blend_equation(wgfx::BlendEquation::Sub)
 		== static_cast<wgfx::RenderStateFlags>(subEquation | (subEquation << 3)));
-	CHECK(wgfx::alphaRef(0x80) == static_cast<wgfx::RenderStateFlags>(0x80ull << 40));
-	CHECK(wgfx::pointSize(7) == static_cast<wgfx::RenderStateFlags>(7ull << 52));
+	CHECK(wgfx::alpha_ref(0x80) == static_cast<wgfx::RenderStateFlags>(0x80ull << 40));
+	CHECK(wgfx::point_size(7) == static_cast<wgfx::RenderStateFlags>(7ull << 52));
 
 	const wgfx::SamplerFlags sampler{
 		wgfx::SamplerFlags::UvwClamp
@@ -72,7 +72,7 @@ TEST(render_state_composes)
 	CHECK((sampler & wgfx::SamplerFlags::UClamp) == wgfx::SamplerFlags::UClamp);
 	CHECK((sampler & wgfx::SamplerFlags::MinPoint) == wgfx::SamplerFlags::MinPoint);
 
-	CHECK(wgfx::borderColor(3) == static_cast<wgfx::SamplerFlags>(3u << 24));
+	CHECK(wgfx::border_color(3) == static_cast<wgfx::SamplerFlags>(3u << 24));
 
 	const wgfx::DiscardFlags discard{
 		wgfx::DiscardFlags::Bindings | wgfx::DiscardFlags::State };
@@ -100,7 +100,8 @@ namespace
 	{
 		wgfx::VertexLayout layout;
 		layout.begin()
-			.add(wgfx::VertexAttribute::Position, 3, wgfx::VertexAttributeType::Float)
+			.add(wgfx::VertexAttribute::Position,
+				3, wgfx::VertexAttributeType::Float)
 			.end();
 		return layout;
 	}
@@ -138,7 +139,8 @@ TEST(view_creates_with_active_device)
 	CHECK(invalid.id() == wgfx::View::InvalidId);
 
 	CHECK(!wgfx::View::create(wgfx::View::InvalidId).valid());
-	CHECK(!wgfx::View::create(static_cast<u16>(device->caps().maxViews)).valid());
+	CHECK(!wgfx::View::create(
+		static_cast<u16>(device->caps().maxViews)).valid());
 }
 
 TEST(view_is_copyable)
@@ -163,24 +165,26 @@ TEST(view_configures)
 	const wgfx::View view{ wgfx::View::create(0) };
 	REQUIRE(view.valid());
 
-	CHECK(view.setRect(0, 0, 320, 180));
-	CHECK(view.setRect(0, 0, wgfx::BackbufferRatio::Half));
-	CHECK(view.setScissor(0, 0, 160, 90));
-	CHECK(view.setClear(wgfx::ClearFlags::ColorDepth, 0x11223344, 1.0f, 0));
-	CHECK(view.setTransform(IdentityMatrix, IdentityMatrix));
-	CHECK(view.setMode(wgfx::ViewMode::Sequential));
-	CHECK(view.setName("main"));
-	CHECK(view.setFrameBuffer());
+	CHECK(view.set_rect(0, 0, 320, 180));
+	CHECK(view.set_rect(0, 0, wgfx::BackbufferRatio::Half));
+	CHECK(view.set_scissor(0, 0, 160, 90));
+	CHECK(view.set_clear(
+		wgfx::ClearFlags::ColorDepth, 0x11223344, 1.0f, 0));
+	CHECK(view.set_transform(IdentityMatrix, IdentityMatrix));
+	CHECK(view.set_mode(wgfx::ViewMode::Sequential));
+	CHECK(view.set_name("main"));
+	CHECK(view.set_framebuffer());
 	CHECK(view.touch());
-	CHECK(view.resetSettings());
+	CHECK(view.reset_settings());
 
 	wgfx::FrameBufferDesc desc;
 	desc.width = 16;
 	desc.height = 16;
 	desc.colorFormat = wgfx::TextureFormat::RGBA8;
-	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
+	const wgfx::FrameBuffer framebuffer{
+		wgfx::FrameBuffer::create(desc) };
 	REQUIRE(framebuffer.valid());
-	CHECK(view.setFrameBuffer(&framebuffer));
+	CHECK(view.set_framebuffer(&framebuffer));
 }
 
 TEST(view_rejects_invalid_input)
@@ -191,17 +195,17 @@ TEST(view_rejects_invalid_input)
 	const wgfx::View view{ wgfx::View::create(0) };
 	REQUIRE(view.valid());
 
-	CHECK(!view.setRect(0, 0, 0, 10));
-	CHECK(!view.setRect(0, 0, 10, 0));
-	CHECK(!view.setRect(0, 0, wgfx::BackbufferRatio::Explicit));
-	CHECK(!view.setTransform(nullptr, IdentityMatrix));
-	CHECK(!view.setTransform(IdentityMatrix, nullptr));
-	CHECK(!view.setMode(static_cast<wgfx::ViewMode>(wgfx::ViewMode::Count)));
-	CHECK(!view.setName(nullptr));
-	CHECK(!view.setClear(static_cast<wgfx::ClearFlags>(0x8000)));
+	CHECK(!view.set_rect(0, 0, 0, 10));
+	CHECK(!view.set_rect(0, 0, 10, 0));
+	CHECK(!view.set_rect(0, 0, wgfx::BackbufferRatio::Explicit));
+	CHECK(!view.set_transform(nullptr, IdentityMatrix));
+	CHECK(!view.set_transform(IdentityMatrix, nullptr));
+	CHECK(!view.set_mode(static_cast<wgfx::ViewMode>(wgfx::ViewMode::Count)));
+	CHECK(!view.set_name(nullptr));
+	CHECK(!view.set_clear(static_cast<wgfx::ClearFlags>(0x8000)));
 
 	const wgfx::FrameBuffer invalidFramebuffer;
-	CHECK(!view.setFrameBuffer(&invalidFramebuffer));
+	CHECK(!view.set_framebuffer(&invalidFramebuffer));
 
 	const wgfx::VertexLayout layout{ position_layout() };
 	const wgfx::VertexBuffer vertexBuffer{
@@ -223,26 +227,26 @@ TEST(view_rejects_invalid_input)
 	REQUIRE(texture.valid());
 	REQUIRE(sampler.valid());
 
-	CHECK(!view.setVertexBuffer(4, vertexBuffer));
-	CHECK(!view.setVertexBuffer(4, dynamicVertexBuffer));
-	CHECK(!view.setVertexBuffer(0, wgfx::VertexBuffer{}));
-	CHECK(!view.setVertexBuffer(0, wgfx::DynamicVertexBuffer{}));
-	CHECK(!view.setVertexBuffer(0, vertexBuffer, 0, 0));
-	CHECK(!view.setVertexBuffer(0, dynamicVertexBuffer, 0, 0));
-	CHECK(!view.setIndexBuffer(wgfx::IndexBuffer{}));
-	CHECK(!view.setIndexBuffer(wgfx::DynamicIndexBuffer{}));
-	CHECK(!view.setIndexBuffer(indexBuffer, 0, 0));
-	CHECK(!view.setIndexBuffer(dynamicIndexBuffer, 0, 0));
-	CHECK(!view.setTexture(16, sampler, texture));
-	CHECK(!view.setTexture(0, wgfx::Uniform{}, texture));
-	CHECK(!view.setTexture(0, sampler, wgfx::Texture{}));
+	CHECK(!view.set_vertex_buffer(4, vertexBuffer));
+	CHECK(!view.set_vertex_buffer(4, dynamicVertexBuffer));
+	CHECK(!view.set_vertex_buffer(0, wgfx::VertexBuffer{}));
+	CHECK(!view.set_vertex_buffer(0, wgfx::DynamicVertexBuffer{}));
+	CHECK(!view.set_vertex_buffer(0, vertexBuffer, 0, 0));
+	CHECK(!view.set_vertex_buffer(0, dynamicVertexBuffer, 0, 0));
+	CHECK(!view.set_index_buffer(wgfx::IndexBuffer{}));
+	CHECK(!view.set_index_buffer(wgfx::DynamicIndexBuffer{}));
+	CHECK(!view.set_index_buffer(indexBuffer, 0, 0));
+	CHECK(!view.set_index_buffer(dynamicIndexBuffer, 0, 0));
+	CHECK(!view.set_texture(16, sampler, texture));
+	CHECK(!view.set_texture(0, wgfx::Uniform{}, texture));
+	CHECK(!view.set_texture(0, sampler, wgfx::Texture{}));
 	CHECK(!view.submit(wgfx::Program{}));
 
 	const wgfx::View invalid;
 	CHECK(!invalid.touch());
-	CHECK(!invalid.resetSettings());
+	CHECK(!invalid.reset_settings());
 	CHECK(!invalid.discard());
-	CHECK(!invalid.setRect(0, 0, 16, 16));
+	CHECK(!invalid.set_rect(0, 0, 16, 16));
 }
 
 TEST(view_binds_and_submits_draw)
@@ -252,8 +256,8 @@ TEST(view_binds_and_submits_draw)
 
 	const wgfx::View view{ wgfx::View::create(0) };
 	REQUIRE(view.valid());
-	CHECK(view.setRect(0, 0, 320, 180));
-	CHECK(view.setClear(wgfx::ClearFlags::ColorDepth));
+	CHECK(view.set_rect(0, 0, 320, 180));
+	CHECK(view.set_clear(wgfx::ClearFlags::ColorDepth));
 
 	const wgfx::VertexLayout layout{ position_layout() };
 	const wgfx::VertexBuffer vertexBuffer{
@@ -284,10 +288,10 @@ TEST(view_binds_and_submits_draw)
 		| wgfx::RenderStateFlags::PrimitiveTriStrip;
 	state.rgba = 0xffffffff;
 
-	CHECK(view.setState(state));
-	CHECK(view.setVertexBuffer(0, vertexBuffer));
-	CHECK(view.setIndexBuffer(indexBuffer, 0, 3));
-	CHECK(view.setTexture(0, sampler, texture));
+	CHECK(view.set_state(state));
+	CHECK(view.set_vertex_buffer(0, vertexBuffer));
+	CHECK(view.set_index_buffer(indexBuffer, 0, 3));
+	CHECK(view.set_texture(0, sampler, texture));
 	CHECK(view.submit(program, 0));
 	CHECK(view.touch());
 	CHECK(view.discard());
@@ -310,9 +314,9 @@ TEST(view_binds_dynamic_buffers)
 	REQUIRE(vertexBuffer.valid());
 	REQUIRE(indexBuffer.valid());
 
-	CHECK(view.setVertexBuffer(0, vertexBuffer, 0, 3));
-	CHECK(view.setIndexBuffer(indexBuffer, 0, 3));
-	CHECK(view.setState(wgfx::RenderStateFlags::WriteRgb, 0xffffffff));
+	CHECK(view.set_vertex_buffer(0, vertexBuffer, 0, 3));
+	CHECK(view.set_index_buffer(indexBuffer, 0, 3));
+	CHECK(view.set_state(wgfx::RenderStateFlags::WriteRgb, 0xffffffff));
 }
 
 TEST(view_submits_occlusion_query)
@@ -346,9 +350,9 @@ TEST(view_dies_with_device)
 	device->shutdown();
 	CHECK(!view.valid());
 	CHECK(view.id() == wgfx::View::InvalidId);
-	CHECK(!view.setRect(0, 0, 16, 16));
+	CHECK(!view.set_rect(0, 0, 16, 16));
 	CHECK(!view.touch());
-	CHECK(!view.resetSettings());
+	CHECK(!view.reset_settings());
 	CHECK(!view.discard());
 
 	auto recreated = wgfx::Device::create(headless_desc());
@@ -367,17 +371,17 @@ TEST(view_requires_bgfx_backend)
 	CHECK(!view.valid());
 	CHECK(view.id() == wgfx::View::InvalidId);
 
-	CHECK(!view.setRect(0, 0, 16, 16));
-	CHECK(!view.setRect(0, 0, wgfx::BackbufferRatio::Half));
-	CHECK(!view.setScissor());
-	CHECK(!view.setClear(wgfx::ClearFlags::ColorDepth));
-	CHECK(!view.setFrameBuffer());
-	CHECK(!view.setTransform(IdentityMatrix, IdentityMatrix));
-	CHECK(!view.setMode(wgfx::ViewMode::Default));
-	CHECK(!view.setName("main"));
-	CHECK(!view.resetSettings());
+	CHECK(!view.set_rect(0, 0, 16, 16));
+	CHECK(!view.set_rect(0, 0, wgfx::BackbufferRatio::Half));
+	CHECK(!view.set_scissor());
+	CHECK(!view.set_clear(wgfx::ClearFlags::ColorDepth));
+	CHECK(!view.set_framebuffer());
+	CHECK(!view.set_transform(IdentityMatrix, IdentityMatrix));
+	CHECK(!view.set_mode(wgfx::ViewMode::Default));
+	CHECK(!view.set_name("main"));
+	CHECK(!view.reset_settings());
 	CHECK(!view.touch());
-	CHECK(!view.setState(wgfx::RenderState{}));
+	CHECK(!view.set_state(wgfx::RenderState{}));
 	CHECK(!view.discard());
 
 	const wgfx::View copy{ view };

@@ -391,15 +391,15 @@ TEST(texture_updates_2d)
 	REQUIRE(texture.valid());
 
 	const u8 pixels[2 * 2 * 4]{};
-	CHECK(texture.update2D(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
-	CHECK(texture.update2D(0, 0, 1, 1, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.update_2d(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.update_2d(0, 0, 1, 1, 2, 2, pixels, sizeof(pixels)));
 
 	// Out of bounds, empty data, and layer on a non-array texture.
-	CHECK(!texture.update2D(0, 0, 3, 0, 2, 2, pixels, sizeof(pixels)));
-	CHECK(!texture.update2D(0, 0, 0, 3, 2, 2, pixels, sizeof(pixels)));
-	CHECK(!texture.update2D(0, 0, 0, 0, 2, 2, nullptr, 0));
-	CHECK(!texture.update2D(0, 0, 0, 0, 2, 2, pixels, 0));
-	CHECK(!texture.update2D(1, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update_2d(0, 0, 3, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update_2d(0, 0, 0, 3, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update_2d(0, 0, 0, 0, 2, 2, nullptr, 0));
+	CHECK(!texture.update_2d(0, 0, 0, 0, 2, 2, pixels, 0));
+	CHECK(!texture.update_2d(1, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
 }
 
 TEST(texture_update_2d_respects_mips_and_immutability)
@@ -414,15 +414,15 @@ TEST(texture_update_2d_respects_mips_and_immutability)
 
 	const u8 pixel[4]{};
 	const u8 mipPixels[4 * 4 * 4]{};
-	CHECK(texture.update2D(0, 0, 0, 0, 4, 4, mipPixels, sizeof(mipPixels)));
-	CHECK(texture.update2D(0, 2, 0, 0, 1, 1, pixel, sizeof(pixel)));
-	CHECK(!texture.update2D(0, 3, 0, 0, 1, 1, pixel, sizeof(pixel)));
+	CHECK(texture.update_2d(0, 0, 0, 0, 4, 4, mipPixels, sizeof(mipPixels)));
+	CHECK(texture.update_2d(0, 2, 0, 0, 1, 1, pixel, sizeof(pixel)));
+	CHECK(!texture.update_2d(0, 3, 0, 0, 1, 1, pixel, sizeof(pixel)));
 
 	wgfx::TextureDesc immutableDesc{ rgba8_desc(2, 2) };
 	const u8 pixels[2 * 2 * 4]{};
 	auto immutable = wgfx::Texture::create(immutableDesc, pixels, sizeof(pixels));
 	REQUIRE(immutable.valid());
-	CHECK(!immutable.update2D(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!immutable.update_2d(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
 }
 
 TEST(texture_updates_3d)
@@ -434,16 +434,16 @@ TEST(texture_updates_3d)
 	REQUIRE(texture.valid());
 
 	const u8 voxels[2 * 2 * 2 * 4]{};
-	CHECK(texture.update3D(0, 0, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
-	CHECK(texture.update3D(0, 1, 1, 1, 2, 2, 2, voxels, sizeof(voxels)));
+	CHECK(texture.update_3d(0, 0, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
+	CHECK(texture.update_3d(0, 1, 1, 1, 2, 2, 2, voxels, sizeof(voxels)));
 
-	CHECK(!texture.update3D(0, 3, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
-	CHECK(!texture.update3D(0, 0, 0, 0, 2, 2, 0, voxels, sizeof(voxels)));
-	CHECK(!texture.update3D(0, 0, 0, 0, 2, 2, 2, nullptr, 0));
+	CHECK(!texture.update_3d(0, 3, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
+	CHECK(!texture.update_3d(0, 0, 0, 0, 2, 2, 0, voxels, sizeof(voxels)));
+	CHECK(!texture.update_3d(0, 0, 0, 0, 2, 2, 2, nullptr, 0));
 
 	auto flat = wgfx::Texture::create(rgba8_desc(4, 4));
 	REQUIRE(flat.valid());
-	CHECK(!flat.update3D(0, 0, 0, 0, 2, 2, 1, voxels, sizeof(voxels)));
+	CHECK(!flat.update_3d(0, 0, 0, 0, 2, 2, 1, voxels, sizeof(voxels)));
 }
 
 TEST(texture_updates_cube)
@@ -455,15 +455,15 @@ TEST(texture_updates_cube)
 	REQUIRE(texture.valid());
 
 	const u8 pixels[2 * 2 * 4]{};
-	CHECK(texture.updateCube(0, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
-	CHECK(texture.updateCube(0, 5, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.update_cube(0, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.update_cube(0, 5, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
 
-	CHECK(!texture.updateCube(0, 6, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update_cube(0, 6, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
 
 	auto array = wgfx::Texture::create(rgba8_cube_desc(4, 2));
 	REQUIRE(array.valid());
-	CHECK(array.updateCube(1, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
-	CHECK(!array.updateCube(2, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(array.update_cube(1, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!array.update_cube(2, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
 }
 
 TEST(texture_read_requires_read_back_flag)
@@ -663,9 +663,9 @@ TEST(texture_requires_bgfx_backend)
 	CHECK(!containerTexture.valid());
 
 	const u8 pixels[4 * 4 * 4]{};
-	CHECK(!texture.update2D(0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
-	CHECK(!texture3D.update3D(0, 0, 0, 0, 1, 1, 1, pixels, sizeof(pixels)));
-	CHECK(!textureCube.updateCube(0, 0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
+	CHECK(!texture.update_2d(0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
+	CHECK(!texture3D.update_3d(0, 0, 0, 0, 1, 1, 1, pixels, sizeof(pixels)));
+	CHECK(!textureCube.update_cube(0, 0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
 
 	u8 result[4 * 4 * 4]{};
 	CHECK(texture.read(result) == 0);

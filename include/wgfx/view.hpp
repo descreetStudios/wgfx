@@ -67,9 +67,6 @@ namespace wgfx
 		return lhs;
 	}
 
-	// A non-owning handle to a bgfx view. Views configure a render target and
-	// collect draw submissions for that target. Operations are no-ops when the
-	// view belongs to a device that has been shut down.
 	class View
 	{
 	public:
@@ -82,84 +79,58 @@ namespace wgfx
 		bool valid() const;
 		u16 id() const;
 
-		// View configuration.
-		bool setRect(
-			i16 x,
-			i16 y,
-			u16 width,
-			u16 height,
+		bool set_rect(i16 x, i16 y,
+			u16 width, u16 height,
 			float minDepth = 0.0f,
 			float maxDepth = 1.0f) const;
-		bool setRect(i16 x, i16 y, BackbufferRatio ratio) const;
-		bool setScissor(
-			u16 x = 0,
-			u16 y = 0,
-			u16 width = 0,
-			u16 height = 0) const;
-		bool setClear(
-			ClearFlags flags,
+		bool set_rect(i16 x, i16 y, BackbufferRatio ratio) const;
+		bool set_scissor(u16 x = 0, u16 y = 0,
+			u16 width = 0, u16 height = 0) const;
+		bool set_clear(ClearFlags flags,
 			u32 rgba = 0x000000ff,
 			float depth = 1.0f,
 			u8 stencil = 0) const;
-		bool setFrameBuffer(const FrameBuffer* framebuffer = nullptr) const;
-		bool setTransform(const void* view, const void* projection) const;
-		bool setMode(ViewMode mode) const;
-		bool setName(const char* name) const;
-		bool resetSettings() const;
+		bool set_framebuffer(const FrameBuffer* framebuffer = nullptr) const;
+		bool set_transform(const void* view, const void* projection) const;
+		bool set_mode(ViewMode mode) const;
+		bool set_name(const char* name) const;
+		bool reset_settings() const;
 		bool touch() const;
 
-		// Draw submission state. State set here applies to the next submit.
-		bool setState(const RenderState& state) const;
-		bool setState(RenderStateFlags flags, u32 rgba = 0) const;
+		bool set_state(const RenderState& state) const;
+		bool set_state(RenderStateFlags flags, u32 rgba = 0) const;
 
-		bool setVertexBuffer(u8 stream, const VertexBuffer& buffer) const;
-		bool setVertexBuffer(
-			u8 stream,
-			const VertexBuffer& buffer,
-			u32 startVertex,
-			u32 numVertices) const;
-		bool setVertexBuffer(u8 stream, const DynamicVertexBuffer& buffer) const;
-		bool setVertexBuffer(
-			u8 stream,
-			const DynamicVertexBuffer& buffer,
-			u32 startVertex,
-			u32 numVertices) const;
+		bool set_vertex_buffer(u8 stream, const VertexBuffer& buffer) const;
+		bool set_vertex_buffer(u8 stream, const VertexBuffer& buffer,
+			u32 startVertex, u32 numVertices) const;
+		bool set_vertex_buffer(u8 stream, const DynamicVertexBuffer& buffer) const;
+		bool set_vertex_buffer(u8 stream, const DynamicVertexBuffer& buffer,
+			u32 startVertex, u32 numVertices) const;
 
-		bool setIndexBuffer(const IndexBuffer& buffer) const;
-		bool setIndexBuffer(
-			const IndexBuffer& buffer,
-			u32 firstIndex,
-			u32 numIndices) const;
-		bool setIndexBuffer(const DynamicIndexBuffer& buffer) const;
-		bool setIndexBuffer(
-			const DynamicIndexBuffer& buffer,
-			u32 firstIndex,
-			u32 numIndices) const;
+		bool set_index_buffer(const IndexBuffer& buffer) const;
+		bool set_index_buffer(const IndexBuffer& buffer,
+			u32 firstIndex, u32 numIndices) const;
+		bool set_index_buffer(const DynamicIndexBuffer& buffer) const;
+		bool set_index_buffer(const DynamicIndexBuffer& buffer,
+			u32 firstIndex, u32 numIndices) const;
 
-		// Binds `texture` to `stage` using the texture's sampler settings.
-		bool setTexture(
-			u8 stage,
+		bool set_texture(u8 stage,
 			const Uniform& sampler,
 			const Texture& texture) const;
-		bool setTexture(
-			u8 stage,
+		bool set_texture(u8 stage,
 			const Uniform& sampler,
 			const Texture& texture,
 			SamplerFlags flags) const;
 
-		bool submit(
-			const Program& program,
-			u32 depth = 0,
-			DiscardFlags flags = DiscardFlags::All) const;
-		bool submit(
-			const Program& program,
+		bool submit(const Program& program,
+			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
+		bool submit(const Program& program,
 			const OcclusionQuery& query,
-			u32 depth = 0,
-			DiscardFlags flags = DiscardFlags::All) const;
+			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
 		bool discard(DiscardFlags flags = DiscardFlags::All) const;
 
 	private:
 		u16 mId{ InvalidId };
 		u32 mGeneration{ 0 };
 	};
-} // namespace wgfx
+}
