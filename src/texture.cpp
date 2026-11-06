@@ -12,6 +12,46 @@
 
 namespace wgfx
 {
+	namespace
+	{
+		u32 mip_extent(u32 base, u8 mip)
+		{
+			if (base == 0)
+				return 0;
+
+			const u32 extent{ base >> mip };
+			return extent == 0 ? 1 : extent;
+		}
+
+		bool region_within(u32 extent, u16 origin, u16 size)
+		{
+			if (origin >= extent)
+				return false;
+
+			return size == 0
+				|| static_cast<u32>(origin) + size <= extent;
+		}
+
+		u8 calc_num_mips(bool mipmapped, u16 width, u16 height, u16 depth)
+		{
+			if (!mipmapped)
+				return 1;
+
+			u32 largest{ width > height ? width : height };
+			if (depth > largest)
+				largest = depth;
+
+			u8 count{ 1 };
+			while (largest > 1)
+			{
+				largest >>= 1;
+				++count;
+			}
+
+			return count;
+		}
+	} // anonymous namespace
+
 #if defined(WGFX_BACKEND_BGFX)
 	namespace
 	{
@@ -82,6 +122,20 @@ namespace wgfx
 				: static_cast<bgfx::BackbufferRatio::Enum>(ratio);
 		}
 
+		bgfx::TextureRegion to_bgfx(const TextureRegion& region)
+		{
+			return bgfx::TextureRegion{
+				detail::TextureAccess::native(*region.texture),
+				region.mip,
+				region.x,
+				region.y,
+				region.z,
+				region.width,
+				region.height,
+				region.depth,
+			};
+		}
+
 		bool is_image_container(const void* data, u32 size)
 		{
 			if (!data)
@@ -102,9 +156,17 @@ namespace wgfx
 	Texture::Texture(Texture&& other) noexcept
 		: mHandle{ other.mHandle }
 		, mGeneration{ other.mGeneration }
+		, mDesc{ other.mDesc }
+		, mNumMips{ other.mNumMips }
+		, mImmutable{ other.mImmutable }
+		, mDescKnown{ other.mDescKnown }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mDesc = {};
+		other.mNumMips = 0;
+		other.mImmutable = false;
+		other.mDescKnown = false;
 	}
 
 	Texture& Texture::operator=(Texture&& other) noexcept
@@ -115,8 +177,16 @@ namespace wgfx
 		reset();
 		mHandle = other.mHandle;
 		mGeneration = other.mGeneration;
+		mDesc = other.mDesc;
+		mNumMips = other.mNumMips;
+		mImmutable = other.mImmutable;
+		mDescKnown = other.mDescKnown;
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mDesc = {};
+		other.mNumMips = 0;
+		other.mImmutable = false;
+		other.mDescKnown = false;
 		return *this;
 	}
 
@@ -260,6 +330,16 @@ namespace wgfx
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mDesc = desc;
+		result.mNumMips = ratioBased
+			? 0
+			: calc_num_mips(
+				desc.mipmapped,
+				desc.width,
+				desc.height,
+				is3D ? desc.depth : u16{ 1 });
+		result.mImmutable = data != nullptr;
+		result.mDescKnown = true;
 #else
 		(void)desc;
 		(void)data;
@@ -298,6 +378,9 @@ namespace wgfx
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mDesc = {};
+		result.mDesc.flags = flags;
+		result.mImmutable = true;
 #else
 		(void)data;
 		(void)size;
@@ -306,6 +389,330 @@ namespace wgfx
 #endif
 
 		return result;
+	}
+
+	bool Texture::mip_valid(u8 mip) const
+	{
+		return mNumMips == 0 || mip < mNumMips;
+	}
+
+	bool Texture::region_valid(
+		u8 mip,
+		u16 x,
+		u16 y,
+		u16 z,
+		u16 width,
+		u16 height,
+		u16 depth) const
+	{
+		if (!mip_valid(mip))
+			return false;
+
+		// Ratio-based and container textures do not expose their dimensions.
+		if (mDesc.width == 0 || mDesc.height == 0)
+			return true;
+
+		const u32 mipWidth{ mip_extent(mDesc.width, mip) };
+		const u32 mipHeight{ mip_extent(mDesc.height, mip) };
+
+		u32 mipDepth{ 1 };
+		switch (mDesc.type)
+		{
+		case TextureType::Texture3D:
+			mipDepth = mip_extent(mDesc.depth, mip);
+			break;
+		case TextureType::TextureCube:
+			mipDepth = 6u * mDesc.layers;
+			break;
+		case TextureType::Texture2D:
+			mipDepth = mDesc.layers;
+			break;
+		}
+
+		return region_within(mipWidth, x, width)
+			&& region_within(mipHeight, y, height)
+			&& region_within(mipDepth, z, depth);
+	}
+
+	bool Texture::update2D(
+		u16 layer,
+		u8 mip,
+		u16 x,
+		u16 y,
+		u16 width,
+		u16 height,
+		const void* data,
+		u32 size,
+		u16 pitch)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| mImmutable
+		|| !data
+		|| size == 0
+		|| width == 0
+		|| height == 0)
+		{
+			return false;
+		}
+
+		if (mDescKnown && mDesc.type != TextureType::Texture2D)
+			return false;
+
+		if (mDescKnown && layer >= mDesc.layers)
+			return false;
+
+		if (!region_valid(mip, x, y, layer, width, height, 1))
+			return false;
+
+		const bgfx::Memory* memory{ bgfx::copy(data, size) };
+		if (!memory)
+			return false;
+
+		bgfx::updateTexture2D(
+			detail::TextureAccess::native(*this),
+			layer,
+			mip,
+			x,
+			y,
+			width,
+			height,
+			memory,
+			pitch);
+		return true;
+#else
+		(void)layer;
+		(void)mip;
+		(void)x;
+		(void)y;
+		(void)width;
+		(void)height;
+		(void)data;
+		(void)size;
+		(void)pitch;
+		return false;
+#endif
+	}
+
+	bool Texture::update3D(
+		u8 mip,
+		u16 x,
+		u16 y,
+		u16 z,
+		u16 width,
+		u16 height,
+		u16 depth,
+		const void* data,
+		u32 size)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| mImmutable
+		|| !data
+		|| size == 0
+		|| width == 0
+		|| height == 0
+		|| depth == 0)
+		{
+			return false;
+		}
+
+		if (mDescKnown && mDesc.type != TextureType::Texture3D)
+			return false;
+
+		if (!region_valid(mip, x, y, z, width, height, depth))
+			return false;
+
+		const bgfx::Memory* memory{ bgfx::copy(data, size) };
+		if (!memory)
+			return false;
+
+		bgfx::updateTexture3D(
+			detail::TextureAccess::native(*this),
+			mip,
+			x,
+			y,
+			z,
+			width,
+			height,
+			depth,
+			memory);
+		return true;
+#else
+		(void)mip;
+		(void)x;
+		(void)y;
+		(void)z;
+		(void)width;
+		(void)height;
+		(void)depth;
+		(void)data;
+		(void)size;
+		return false;
+#endif
+	}
+
+	bool Texture::updateCube(
+		u16 layer,
+		u8 side,
+		u8 mip,
+		u16 x,
+		u16 y,
+		u16 width,
+		u16 height,
+		const void* data,
+		u32 size,
+		u16 pitch)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| mImmutable
+		|| !data
+		|| size == 0
+		|| width == 0
+		|| height == 0
+		|| side > 5)
+		{
+			return false;
+		}
+
+		if (mDescKnown && mDesc.type != TextureType::TextureCube)
+			return false;
+
+		if (mDescKnown && layer >= mDesc.layers)
+			return false;
+
+		if (!region_valid(mip, x, y, 0, width, height, 1))
+			return false;
+
+		const bgfx::Memory* memory{ bgfx::copy(data, size) };
+		if (!memory)
+			return false;
+
+		bgfx::updateTextureCube(
+			detail::TextureAccess::native(*this),
+			layer,
+			side,
+			mip,
+			x,
+			y,
+			width,
+			height,
+			memory,
+			pitch);
+		return true;
+#else
+		(void)layer;
+		(void)side;
+		(void)mip;
+		(void)x;
+		(void)y;
+		(void)width;
+		(void)height;
+		(void)data;
+		(void)size;
+		(void)pitch;
+		return false;
+#endif
+	}
+
+	u32 Texture::read(void* data, u8 mip, u16 layer) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !data
+		|| (mDesc.flags & TextureFlags::ReadBack) == TextureFlags::None)
+		{
+			return 0;
+		}
+
+		if (!region_valid(mip, 0, 0, layer, 0, 0, 1))
+			return 0;
+
+		const bgfx::TextureRegion region{
+			detail::TextureAccess::native(*this),
+			mip,
+			0,
+			0,
+			layer,
+			0,
+			0,
+			0,
+		};
+
+		return bgfx::read(region, data);
+#else
+		(void)data;
+		(void)mip;
+		(void)layer;
+		return 0;
+#endif
+	}
+
+	bool Texture::blit(
+		u16 view,
+		const TextureRegion& dstRegion,
+		const TextureRegion& srcRegion)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!dstRegion.texture || !srcRegion.texture)
+			return false;
+
+		const Texture& dst{ *dstRegion.texture };
+		const Texture& src{ *srcRegion.texture };
+
+		if (!dst.valid() || !src.valid() || &dst == &src)
+			return false;
+
+		if (dst.mImmutable
+		|| (dst.mDesc.flags & TextureFlags::BlitDestination) == TextureFlags::None)
+		{
+			return false;
+		}
+
+		if (dst.mDescKnown
+		&& src.mDescKnown
+		&& dst.mDesc.format != src.mDesc.format)
+		{
+			return false;
+		}
+
+		if (!dst.region_valid(
+			dstRegion.mip,
+			dstRegion.x,
+			dstRegion.y,
+			dstRegion.z,
+			dstRegion.width,
+			dstRegion.height,
+			dstRegion.depth))
+		{
+			return false;
+		}
+
+		if (!src.region_valid(
+			srcRegion.mip,
+			srcRegion.x,
+			srcRegion.y,
+			srcRegion.z,
+			srcRegion.width,
+			srcRegion.height,
+			srcRegion.depth))
+		{
+			return false;
+		}
+
+		const bgfx::Caps* caps{ bgfx::getCaps() };
+		if (!caps || view >= caps->limits.maxViews)
+			return false;
+
+		bgfx::blit(view, to_bgfx(dstRegion), to_bgfx(srcRegion));
+		return true;
+#else
+		(void)view;
+		(void)dstRegion;
+		(void)srcRegion;
+		return false;
+#endif
 	}
 
 	bool Texture::valid() const
@@ -328,5 +735,9 @@ namespace wgfx
 
 		mHandle = InvalidHandle;
 		mGeneration = 0;
+		mDesc = {};
+		mNumMips = 0;
+		mImmutable = false;
+		mDescKnown = false;
 	}
 }
