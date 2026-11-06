@@ -30,8 +30,14 @@ namespace
 		return desc;
 	}
 
-	wgfx::TextureDesc rgba8_3d_desc(u16 width, u16 height, u16 depth)
+	wgfx::TextureDesc rgba16_desc(u16 width, u16 height)
 	{
+		wgfx::TextureDesc desc{ rgba8_desc(width, height) };
+		desc.format = wgfx::TextureFormat::RGBA16;
+		return desc;
+	}
+
+	wgfx::TextureDesc rgba8_3d_desc(u16 width, u16 height, u16 depth)	{
 		wgfx::TextureDesc desc{ rgba8_desc(width, height) };
 		desc.type = wgfx::TextureType::Texture3D;
 		desc.depth = depth;
@@ -376,6 +382,157 @@ TEST(texture_rejects_invalid_input)
 	CHECK(!wgfx::Texture::create(desc, pixels, 0).valid());
 }
 
+TEST(texture_updates_2d)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto texture = wgfx::Texture::create(rgba8_desc(4, 4));
+	REQUIRE(texture.valid());
+
+	const u8 pixels[2 * 2 * 4]{};
+	CHECK(texture.update2D(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.update2D(0, 0, 1, 1, 2, 2, pixels, sizeof(pixels)));
+
+	// Out of bounds, empty data, and layer on a non-array texture.
+	CHECK(!texture.update2D(0, 0, 3, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update2D(0, 0, 0, 3, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!texture.update2D(0, 0, 0, 0, 2, 2, nullptr, 0));
+	CHECK(!texture.update2D(0, 0, 0, 0, 2, 2, pixels, 0));
+	CHECK(!texture.update2D(1, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+}
+
+TEST(texture_update_2d_respects_mips_and_immutability)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	wgfx::TextureDesc desc{ rgba8_desc(4, 4) };
+	desc.mipmapped = true;
+	auto texture = wgfx::Texture::create(desc);
+	REQUIRE(texture.valid());
+
+	const u8 pixel[4]{};
+	const u8 mipPixels[4 * 4 * 4]{};
+	CHECK(texture.update2D(0, 0, 0, 0, 4, 4, mipPixels, sizeof(mipPixels)));
+	CHECK(texture.update2D(0, 2, 0, 0, 1, 1, pixel, sizeof(pixel)));
+	CHECK(!texture.update2D(0, 3, 0, 0, 1, 1, pixel, sizeof(pixel)));
+
+	wgfx::TextureDesc immutableDesc{ rgba8_desc(2, 2) };
+	const u8 pixels[2 * 2 * 4]{};
+	auto immutable = wgfx::Texture::create(immutableDesc, pixels, sizeof(pixels));
+	REQUIRE(immutable.valid());
+	CHECK(!immutable.update2D(0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+}
+
+TEST(texture_updates_3d)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto texture = wgfx::Texture::create(rgba8_3d_desc(4, 4, 4));
+	REQUIRE(texture.valid());
+
+	const u8 voxels[2 * 2 * 2 * 4]{};
+	CHECK(texture.update3D(0, 0, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
+	CHECK(texture.update3D(0, 1, 1, 1, 2, 2, 2, voxels, sizeof(voxels)));
+
+	CHECK(!texture.update3D(0, 3, 0, 0, 2, 2, 2, voxels, sizeof(voxels)));
+	CHECK(!texture.update3D(0, 0, 0, 0, 2, 2, 0, voxels, sizeof(voxels)));
+	CHECK(!texture.update3D(0, 0, 0, 0, 2, 2, 2, nullptr, 0));
+
+	auto flat = wgfx::Texture::create(rgba8_desc(4, 4));
+	REQUIRE(flat.valid());
+	CHECK(!flat.update3D(0, 0, 0, 0, 2, 2, 1, voxels, sizeof(voxels)));
+}
+
+TEST(texture_updates_cube)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto texture = wgfx::Texture::create(rgba8_cube_desc(4));
+	REQUIRE(texture.valid());
+
+	const u8 pixels[2 * 2 * 4]{};
+	CHECK(texture.updateCube(0, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(texture.updateCube(0, 5, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+
+	CHECK(!texture.updateCube(0, 6, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+
+	auto array = wgfx::Texture::create(rgba8_cube_desc(4, 2));
+	REQUIRE(array.valid());
+	CHECK(array.updateCube(1, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+	CHECK(!array.updateCube(2, 0, 0, 0, 0, 2, 2, pixels, sizeof(pixels)));
+}
+
+TEST(texture_read_requires_read_back_flag)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const u8 pixels[2 * 2 * 4]{};
+	wgfx::TextureDesc desc{ rgba8_desc(2, 2) };
+	desc.flags = wgfx::TextureFlags::ReadBack;
+
+	auto readBack = wgfx::Texture::create(desc, pixels, sizeof(pixels));
+	REQUIRE(readBack.valid());
+
+	u8 result[2 * 2 * 4]{};
+	CHECK(readBack.read(result) > 0);
+	CHECK(readBack.read(nullptr) == 0);
+
+	auto plain = wgfx::Texture::create(rgba8_desc(2, 2));
+	REQUIRE(plain.valid());
+	CHECK(plain.read(result) == 0);
+
+	wgfx::Texture invalid;
+	CHECK(invalid.read(result) == 0);
+}
+
+TEST(texture_blits_between_textures)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const u8 pixels[4 * 4 * 4]{};
+	const auto src = wgfx::Texture::create(rgba8_desc(4, 4), pixels, sizeof(pixels));
+	REQUIRE(src.valid());
+
+	wgfx::TextureDesc desc{ rgba8_desc(4, 4) };
+	desc.flags = wgfx::TextureFlags::BlitDestination;
+	const auto dst = wgfx::Texture::create(desc);
+	REQUIRE(dst.valid());
+
+	wgfx::TextureRegion dstRegion{};
+	dstRegion.texture = &dst;
+	dstRegion.width = 2;
+	dstRegion.height = 2;
+
+	wgfx::TextureRegion srcRegion{};
+	srcRegion.texture = &src;
+	srcRegion.width = 2;
+	srcRegion.height = 2;
+
+	CHECK(wgfx::Texture::blit(0, dstRegion, srcRegion));
+
+	// Missing destination flag, mismatched formats, and identical textures.
+	wgfx::TextureRegion badDst{ srcRegion };
+	badDst.texture = &src;
+	CHECK(!wgfx::Texture::blit(0, badDst, srcRegion));
+
+	auto otherFormat = wgfx::Texture::create(rgba16_desc(2, 2));
+	REQUIRE(otherFormat.valid());
+	wgfx::TextureRegion otherRegion{};
+	otherRegion.texture = &otherFormat;
+	CHECK(!wgfx::Texture::blit(0, otherRegion, srcRegion));
+
+	wgfx::TextureRegion missing{};
+	CHECK(!wgfx::Texture::blit(0, missing, srcRegion));
+
+	CHECK(!wgfx::Texture::blit(0, dstRegion, dstRegion));
+}
+
 TEST(texture_requires_active_device)
 {
 	const auto ktx = minimal_ktx();
@@ -504,6 +661,18 @@ TEST(texture_requires_bgfx_backend)
 	CHECK(!texture3D.valid());
 	CHECK(!textureCube.valid());
 	CHECK(!containerTexture.valid());
+
+	const u8 pixels[4 * 4 * 4]{};
+	CHECK(!texture.update2D(0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
+	CHECK(!texture3D.update3D(0, 0, 0, 0, 1, 1, 1, pixels, sizeof(pixels)));
+	CHECK(!textureCube.updateCube(0, 0, 0, 0, 0, 1, 1, pixels, sizeof(pixels)));
+
+	u8 result[4 * 4 * 4]{};
+	CHECK(texture.read(result) == 0);
+
+	const wgfx::TextureRegion region{};
+	CHECK(!wgfx::Texture::blit(0, region, region));
+
 	texture.reset();
 	texture3D.reset();
 	textureCube.reset();

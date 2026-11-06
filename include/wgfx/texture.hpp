@@ -9,6 +9,8 @@ namespace wgfx
 		struct TextureAccess;
 	}
 
+	struct TextureRegion;
+
 	enum class TextureFormat : u16
 	{
 		BC1,
@@ -191,6 +193,8 @@ namespace wgfx
 	class Texture
 	{
 	public:
+		static constexpr u16 AutoPitch{ 0xffff };
+
 		Texture() = default;
 		~Texture();
 
@@ -213,12 +217,81 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		bool update2D(
+			u16 layer,
+			u8 mip,
+			u16 x,
+			u16 y,
+			u16 width,
+			u16 height,
+			const void* data,
+			u32 size,
+			u16 pitch = AutoPitch);
+		bool update3D(
+			u8 mip,
+			u16 x,
+			u16 y,
+			u16 z,
+			u16 width,
+			u16 height,
+			u16 depth,
+			const void* data,
+			u32 size);
+		bool updateCube(
+			u16 layer,
+			u8 side,
+			u8 mip,
+			u16 x,
+			u16 y,
+			u16 width,
+			u16 height,
+			const void* data,
+			u32 size,
+			u16 pitch = AutoPitch);
+
+		// Reads a whole mip level into `data`. Returns the frame number the
+		// result is available on, or 0 when the read cannot be started.
+		u32 read(void* data, u8 mip = 0, u16 layer = 0) const;
+
+		// Queues a GPU copy from `src` to `dst` in `view`. Returns false when
+		// the regions or textures cannot be blitted.
+		static bool blit(
+			u16 view,
+			const TextureRegion& dst,
+			const TextureRegion& src);
+
 	private:
 		friend struct detail::TextureAccess;
 
 		static constexpr u16 InvalidHandle{ 0xffff };
 
+		bool mip_valid(u8 mip) const;
+		bool region_valid(
+			u8 mip,
+			u16 x,
+			u16 y,
+			u16 z,
+			u16 width,
+			u16 height,
+			u16 depth) const;
+
 		u16 mHandle{ InvalidHandle };
 		u32 mGeneration{ 0 };
+		TextureDesc mDesc{};
+		u8 mNumMips{ 0 };
+		bool mImmutable{ false };
+		bool mDescKnown{ false };
+	};
+
+	struct TextureRegion
+	{
+		const Texture* texture{ nullptr };
+		u8 mip{ 0 };
+		u16 x{ 0 };
+		u16 y{ 0 };
+		u16 z{ 0 };
+		u16 width{ 0 };
+		u16 height{ 0 };
+		u16 depth{ 0 };
 	};
 }
