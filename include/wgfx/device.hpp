@@ -55,6 +55,7 @@ namespace wgfx
 		u32 maxTextureLayers{ 0 };
 		u32 maxViews{ 0 };
 		u32 maxFrameBuffers{ 0 };
+		bool swapChain{ false };
 	};
 
 	class Device

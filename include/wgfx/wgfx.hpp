@@ -13,5 +13,6 @@
 #include <wgfx/program.hpp>
 #include <wgfx/texture.hpp>
 #include <wgfx/uniform.hpp>
+#include <wgfx/swapchain.hpp>
 #include <wgfx/framebuffer.hpp>
 #include <wgfx/occlusion_query.hpp>

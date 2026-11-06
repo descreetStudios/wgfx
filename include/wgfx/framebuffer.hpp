@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wgfx/swapchain.hpp>
 #include <wgfx/texture.hpp>
 
 namespace wgfx
@@ -78,12 +79,15 @@ namespace wgfx
 		FrameBuffer& operator=(FrameBuffer&& other) noexcept;
 
 		static FrameBuffer create(const FrameBufferDesc& desc);
+		static FrameBuffer create(const SwapChainDesc& desc);
 		static FrameBuffer create(
 			const FrameBufferAttachment* attachments,
 			u32 count);
 
 		bool valid() const;
 		void reset();
+
+		bool updateSwapChain(const SwapChainDesc& desc);
 
 		const Texture& colorTexture() const;
 		const Texture& depthTexture() const;
@@ -97,5 +101,6 @@ namespace wgfx
 		u32 mGeneration{ 0 };
 		Texture mColorTexture;
 		Texture mDepthTexture;
+		bool mSwapChain{ false };
 	};
 }

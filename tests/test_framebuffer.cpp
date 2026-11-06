@@ -48,6 +48,15 @@ namespace
 		attachment.texture = &texture;
 		return attachment;
 	}
+
+	wgfx::SwapChainDesc swap_chain_desc(u32 width, u32 height)
+	{
+		wgfx::SwapChainDesc desc;
+		desc.width = width;
+		desc.height = height;
+		desc.colorFormat = wgfx::TextureFormat::RGBA8;
+		return desc;
+	}
 } // anonymous namespace
 
 TEST(framebuffer_creates_color_target)
@@ -330,6 +339,77 @@ TEST(framebuffer_rejects_invalid_input)
 	CHECK(!wgfx::FrameBuffer::create(tooMany, 9).valid());
 }
 
+TEST(framebuffer_creates_swap_chain)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	const wgfx::FrameBuffer framebuffer{
+		wgfx::FrameBuffer::create(swap_chain_desc(64, 48)) };
+	REQUIRE(framebuffer.valid());
+
+	// A swap chain cannot be sampled through the owned texture accessors.
+	CHECK(!framebuffer.colorTexture().valid());
+	CHECK(!framebuffer.depthTexture().valid());
+}
+
+TEST(framebuffer_updates_swap_chain)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
+	REQUIRE(framebuffer.valid());
+
+	wgfx::SwapChainDesc desc{ swap_chain_desc(128, 96) };
+	desc.flags = wgfx::SwapChainFlags::SrgbBackbuffer;
+	CHECK(framebuffer.updateSwapChain(desc));
+	CHECK(framebuffer.valid());
+
+	// A regular render-target frame buffer is not a swap chain.
+	auto regular = wgfx::FrameBuffer::create(color_desc(16, 16));
+	REQUIRE(regular.valid());
+	CHECK(!regular.updateSwapChain(swap_chain_desc(16, 16)));
+}
+
+TEST(framebuffer_rejects_invalid_swap_chain)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	CHECK(!wgfx::FrameBuffer::create(swap_chain_desc(0, 48)).valid());
+	CHECK(!wgfx::FrameBuffer::create(swap_chain_desc(64, 0)).valid());
+
+	wgfx::SwapChainDesc desc{ swap_chain_desc(64, 48) };
+	desc.colorFormat = wgfx::TextureFormat::D24S8;
+	CHECK(!wgfx::FrameBuffer::create(desc).valid());
+
+	desc = swap_chain_desc(64, 48);
+	desc.depthFormat = wgfx::TextureFormat::RGBA8;
+	CHECK(!wgfx::FrameBuffer::create(desc).valid());
+
+	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
+	REQUIRE(framebuffer.valid());
+	CHECK(!framebuffer.updateSwapChain(swap_chain_desc(0, 48)));
+}
+
+TEST(framebuffer_swap_chain_dies_with_device)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
+	REQUIRE(framebuffer.valid());
+
+	device->shutdown();
+	CHECK(!framebuffer.valid());
+	CHECK(!framebuffer.updateSwapChain(swap_chain_desc(64, 48)));
+}
+
 TEST(framebuffer_requires_active_device)
 {
 	wgfx::FrameBufferDesc desc{ color_desc(16, 16) };
@@ -432,6 +512,14 @@ TEST(framebuffer_requires_bgfx_backend)
 
 	const wgfx::FrameBufferAttachment attachment;
 	CHECK(!wgfx::FrameBuffer::create(&attachment, 1).valid());
+
+	wgfx::SwapChainDesc swapChain;
+	swapChain.width = 16;
+	swapChain.height = 16;
+	wgfx::FrameBuffer swapChainBuffer{
+		wgfx::FrameBuffer::create(swapChain) };
+	CHECK(!swapChainBuffer.valid());
+	CHECK(!swapChainBuffer.updateSwapChain(swapChain));
 
 	framebuffer.reset();
 }
