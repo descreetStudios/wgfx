@@ -20,7 +20,7 @@
 	- [x] Swap-chain/window creation and resize
 - [x] DynamicVertexBuffer
 - [x] DynamicIndexBuffer
-- [ ] IndirectBuffer
+- [x] IndirectBuffer
 - [x] OcclusionQuery
 
 ## Rendering

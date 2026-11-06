@@ -15,4 +15,5 @@
 #include <wgfx/uniform.hpp>
 #include <wgfx/swapchain.hpp>
 #include <wgfx/framebuffer.hpp>
+#include <wgfx/indirect_buffer.hpp>
 #include <wgfx/occlusion_query.hpp>

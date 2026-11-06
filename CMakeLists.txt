@@ -15,6 +15,7 @@ add_library(wgfx STATIC
     "src/texture.cpp"
     "src/uniform.cpp"
     "src/framebuffer.cpp"
+    "src/indirect_buffer.cpp"
     "src/occlusion_query.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
