@@ -136,6 +136,7 @@ namespace wgfx
 			mCaps.maxTextureLayers = caps->limits.maxTextureLayers;
 			mCaps.maxViews = caps->limits.maxViews;
 			mCaps.maxFrameBuffers = caps->limits.maxFrameBuffers;
+			mCaps.swapChain = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
 		}
 
 		mRendererName = bgfx::getRendererName(bgfx::getRendererType());

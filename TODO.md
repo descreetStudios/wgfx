@@ -17,7 +17,7 @@
 	- [x] `updateTexture*`, `blit`, `readTexture`
 - [x] Uniform
 - [x] FrameBuffer
-	- [ ] Swap-chain/window creation and resize
+	- [x] Swap-chain/window creation and resize
 - [x] DynamicVertexBuffer
 - [x] DynamicIndexBuffer
 - [ ] IndirectBuffer

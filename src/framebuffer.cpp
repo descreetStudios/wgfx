@@ -34,6 +34,27 @@ namespace wgfx
 		static_assert(static_cast<u8>(AttachmentFlags::Srgb) == BGFX_ATTACHMENT_SRGB,
 			"AttachmentFlags::Srgb must mirror BGFX_ATTACHMENT_SRGB");
 
+		static_assert(static_cast<u32>(SwapChainFlags::None) == BGFX_SWAP_CHAIN_NONE,
+			"SwapChainFlags::None must mirror BGFX_SWAP_CHAIN_NONE");
+		static_assert(static_cast<u32>(SwapChainFlags::Fullscreen) == BGFX_SWAP_CHAIN_FULLSCREEN,
+			"SwapChainFlags::Fullscreen must mirror BGFX_SWAP_CHAIN_FULLSCREEN");
+		static_assert(static_cast<u32>(SwapChainFlags::MsaaX2) == BGFX_SWAP_CHAIN_MSAA_X2,
+			"SwapChainFlags::MsaaX2 must mirror BGFX_SWAP_CHAIN_MSAA_X2");
+		static_assert(static_cast<u32>(SwapChainFlags::MsaaX4) == BGFX_SWAP_CHAIN_MSAA_X4,
+			"SwapChainFlags::MsaaX4 must mirror BGFX_SWAP_CHAIN_MSAA_X4");
+		static_assert(static_cast<u32>(SwapChainFlags::MsaaX8) == BGFX_SWAP_CHAIN_MSAA_X8,
+			"SwapChainFlags::MsaaX8 must mirror BGFX_SWAP_CHAIN_MSAA_X8");
+		static_assert(static_cast<u32>(SwapChainFlags::MsaaX16) == BGFX_SWAP_CHAIN_MSAA_X16,
+			"SwapChainFlags::MsaaX16 must mirror BGFX_SWAP_CHAIN_MSAA_X16");
+		static_assert(static_cast<u32>(SwapChainFlags::SrgbBackbuffer) == BGFX_SWAP_CHAIN_SRGB_BACKBUFFER,
+			"SwapChainFlags::SrgbBackbuffer must mirror BGFX_SWAP_CHAIN_SRGB_BACKBUFFER");
+		static_assert(static_cast<u32>(SwapChainFlags::Hdr10) == BGFX_SWAP_CHAIN_HDR10,
+			"SwapChainFlags::Hdr10 must mirror BGFX_SWAP_CHAIN_HDR10");
+		static_assert(static_cast<u32>(SwapChainFlags::Hidpi) == BGFX_SWAP_CHAIN_HIDPI,
+			"SwapChainFlags::Hidpi must mirror BGFX_SWAP_CHAIN_HIDPI");
+		static_assert(static_cast<u32>(SwapChainFlags::TransparentBackbuffer) == BGFX_SWAP_CHAIN_TRANSPARENT_BACKBUFFER,
+			"SwapChainFlags::TransparentBackbuffer must mirror BGFX_SWAP_CHAIN_TRANSPARENT_BACKBUFFER");
+
 		constexpr u32 MaxAttachments{ 8 };
 		constexpr u64 RenderTargetMsaaMask{ 0x0000007000000000ull };
 
@@ -54,6 +75,47 @@ namespace wgfx
 			default:
 				return false;
 			}
+		}
+
+		bool is_color_format(TextureFormat format)
+		{
+			return format < TextureFormat::Count && !is_depth_format(format);
+		}
+
+		bool valid_swap_chain(const SwapChainDesc& desc)
+		{
+			if (desc.width == 0 || desc.height == 0)
+				return false;
+
+			if (desc.colorFormat != TextureFormat::Count
+			&& !is_color_format(desc.colorFormat))
+			{
+				return false;
+			}
+
+			return desc.depthFormat == TextureFormat::Count
+				|| is_depth_format(desc.depthFormat);
+		}
+
+		bool swap_chain_supported()
+		{
+			const bgfx::Caps* caps{ bgfx::getCaps() };
+			return caps && 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
+		}
+
+		bgfx::SwapChain to_bgfx(const SwapChainDesc& desc)
+		{
+			bgfx::SwapChain swapChain;
+			swapChain.nwh = desc.window.handle;
+			swapChain.ndt = desc.window.display;
+			swapChain.width = desc.width;
+			swapChain.height = desc.height;
+			swapChain.flags = static_cast<u32>(desc.flags);
+			swapChain.formatColor = static_cast<bgfx::TextureFormat::Enum>(desc.colorFormat);
+			swapChain.formatDepthStencil = static_cast<bgfx::TextureFormat::Enum>(desc.depthFormat);
+			swapChain.numBackBuffers = desc.numBackBuffers;
+			swapChain.maxFrameLatency = desc.maxFrameLatency;
+			return swapChain;
 		}
 
 		TextureFlags render_target_flags(TextureFlags flags)
@@ -84,9 +146,11 @@ namespace wgfx
 		, mGeneration{ other.mGeneration }
 		, mColorTexture{ std::move(other.mColorTexture) }
 		, mDepthTexture{ std::move(other.mDepthTexture) }
+		, mSwapChain{ other.mSwapChain }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mSwapChain = false;
 	}
 
 	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept
@@ -99,8 +163,10 @@ namespace wgfx
 		mGeneration = other.mGeneration;
 		mColorTexture = std::move(other.mColorTexture);
 		mDepthTexture = std::move(other.mDepthTexture);
+		mSwapChain = other.mSwapChain;
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mSwapChain = false;
 		return *this;
 	}
 
@@ -177,6 +243,37 @@ namespace wgfx
 		return result;
 	}
 
+	FrameBuffer FrameBuffer::create(const SwapChainDesc& desc)
+	{
+		FrameBuffer result;
+
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid_swap_chain(desc))
+			return result;
+
+		const u32 generation{ detail::device_generation() };
+		if (!detail::device_active()
+		|| generation == 0
+		|| !swap_chain_supported())
+		{
+			return result;
+		}
+
+		const bgfx::FrameBufferHandle handle{
+			bgfx::createFrameBuffer(to_bgfx(desc)) };
+		if (!bgfx::isValid(handle))
+			return result;
+
+		result.mHandle = handle.idx;
+		result.mGeneration = generation;
+		result.mSwapChain = true;
+#else
+		(void)desc;
+#endif
+
+		return result;
+	}
+
 	FrameBuffer FrameBuffer::create(
 		const FrameBufferAttachment* attachments,
 		u32 count)
@@ -234,6 +331,27 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
+	bool FrameBuffer::updateSwapChain(const SwapChainDesc& desc)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !mSwapChain
+		|| !valid_swap_chain(desc)
+		|| !swap_chain_supported())
+		{
+			return false;
+		}
+
+		bgfx::updateSwapChain(
+			bgfx::FrameBufferHandle{ mHandle },
+			to_bgfx(desc));
+		return true;
+#else
+		(void)desc;
+		return false;
+#endif
+	}
+
 	const Texture& FrameBuffer::colorTexture() const
 	{
 		return mColorTexture;
@@ -259,5 +377,6 @@ namespace wgfx
 		mGeneration = 0;
 		mColorTexture.reset();
 		mDepthTexture.reset();
+		mSwapChain = false;
 	}
 }
