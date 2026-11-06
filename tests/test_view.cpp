@@ -1,0 +1,387 @@
+#include <wcore/test.hpp>
+#include <wgfx/wgfx.hpp>
+
+#include <utility>
+
+using namespace wcore;
+using namespace test;
+
+namespace
+{
+	const float IdentityMatrix[16]
+	{
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f,
+	};
+
+	const u8 ViewVertexShader[]
+	{
+		'V', 'S', 'H', 12,
+		1, 0, 0, 0,  // hash in
+		1, 0, 0, 0,  // hash out
+		0, 0, 0, 0,  // raw SRV bindings
+		0, 0, 0, 0,  // raw UAV bindings
+		0, 0,        // uniform count
+	};
+
+	const u8 ViewFragmentShader[]
+	{
+		'F', 'S', 'H', 12,
+		1, 0, 0, 0,  // hash in
+		1, 0, 0, 0,  // hash out
+		0, 0, 0, 0,  // raw SRV bindings
+		0, 0, 0, 0,  // raw UAV bindings
+		0, 0,        // uniform count
+	};
+} // anonymous namespace
+
+TEST(render_state_composes)
+{
+	const wgfx::RenderStateFlags state{
+		wgfx::RenderStateFlags::WriteRgb
+		| wgfx::RenderStateFlags::DepthTestLess
+		| wgfx::RenderStateFlags::CullCw };
+
+	CHECK((state & wgfx::RenderStateFlags::WriteR) == wgfx::RenderStateFlags::WriteR);
+	CHECK((state & wgfx::RenderStateFlags::WriteA) == wgfx::RenderStateFlags::None);
+	CHECK((state & wgfx::RenderStateFlags::DepthTestLess)
+		== wgfx::RenderStateFlags::DepthTestLess);
+
+	wgfx::RenderStateFlags mutableState{ wgfx::RenderStateFlags::WriteRgb };
+	mutableState |= wgfx::RenderStateFlags::WriteZ;
+	CHECK((mutableState & wgfx::RenderStateFlags::WriteZ)
+		== wgfx::RenderStateFlags::WriteZ);
+
+	CHECK(wgfx::blendFunc(wgfx::BlendFactor::SrcAlpha, wgfx::BlendFactor::InvSrcAlpha)
+		== wgfx::BlendAlpha);
+	CHECK(wgfx::blendFunc(wgfx::BlendFactor::One, wgfx::BlendFactor::One)
+		== wgfx::BlendAdd);
+	const u64 subEquation{ static_cast<u64>(
+		wgfx::RenderStateFlags::BlendEquationSub) };
+	CHECK(wgfx::blendEquation(wgfx::BlendEquation::Sub)
+		== static_cast<wgfx::RenderStateFlags>(subEquation | (subEquation << 3)));
+	CHECK(wgfx::alphaRef(0x80) == static_cast<wgfx::RenderStateFlags>(0x80ull << 40));
+	CHECK(wgfx::pointSize(7) == static_cast<wgfx::RenderStateFlags>(7ull << 52));
+
+	const wgfx::SamplerFlags sampler{
+		wgfx::SamplerFlags::UvwClamp
+		| wgfx::SamplerFlags::Point
+		| wgfx::SamplerFlags::Srgb };
+	CHECK((sampler & wgfx::SamplerFlags::UClamp) == wgfx::SamplerFlags::UClamp);
+	CHECK((sampler & wgfx::SamplerFlags::MinPoint) == wgfx::SamplerFlags::MinPoint);
+
+	CHECK(wgfx::borderColor(3) == static_cast<wgfx::SamplerFlags>(3u << 24));
+
+	const wgfx::DiscardFlags discard{
+		wgfx::DiscardFlags::Bindings | wgfx::DiscardFlags::State };
+	CHECK((discard & wgfx::DiscardFlags::Bindings)
+		== wgfx::DiscardFlags::Bindings);
+	CHECK((discard & wgfx::DiscardFlags::Transform)
+		== wgfx::DiscardFlags::None);
+}
+
+#if defined(WGFX_BACKEND_BGFX)
+
+namespace
+{
+	wgfx::DeviceDesc headless_desc()
+	{
+		wgfx::DeviceDesc desc;
+		desc.renderer = wgfx::Renderer::Noop;
+		desc.width = 320;
+		desc.height = 180;
+		desc.vsync = false;
+		return desc;
+	}
+
+	wgfx::VertexLayout position_layout()
+	{
+		wgfx::VertexLayout layout;
+		layout.begin()
+			.add(wgfx::VertexAttribute::Position, 3, wgfx::VertexAttributeType::Float)
+			.end();
+		return layout;
+	}
+
+	const float Triangle[]
+	{
+		0.0f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f,
+	};
+
+	const u16 Indices[]{ 0, 1, 2 };
+
+	wgfx::Texture color_texture()
+	{
+		wgfx::TextureDesc desc;
+		desc.width = 4;
+		desc.height = 4;
+		desc.format = wgfx::TextureFormat::RGBA8;
+		return wgfx::Texture::create(desc);
+	}
+} // anonymous namespace
+
+TEST(view_creates_with_active_device)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	CHECK(view.valid());
+	CHECK(view.id() == 0);
+
+	const wgfx::View invalid;
+	CHECK(!invalid.valid());
+	CHECK(invalid.id() == wgfx::View::InvalidId);
+
+	CHECK(!wgfx::View::create(wgfx::View::InvalidId).valid());
+	CHECK(!wgfx::View::create(static_cast<u16>(device->caps().maxViews)).valid());
+}
+
+TEST(view_is_copyable)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View first{ wgfx::View::create(0) };
+	REQUIRE(first.valid());
+
+	const wgfx::View second{ first };
+	CHECK(first.valid());
+	CHECK(second.valid());
+	CHECK(second.id() == 0);
+}
+
+TEST(view_configures)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	CHECK(view.setRect(0, 0, 320, 180));
+	CHECK(view.setRect(0, 0, wgfx::BackbufferRatio::Half));
+	CHECK(view.setScissor(0, 0, 160, 90));
+	CHECK(view.setClear(wgfx::ClearFlags::ColorDepth, 0x11223344, 1.0f, 0));
+	CHECK(view.setTransform(IdentityMatrix, IdentityMatrix));
+	CHECK(view.setMode(wgfx::ViewMode::Sequential));
+	CHECK(view.setName("main"));
+	CHECK(view.setFrameBuffer());
+	CHECK(view.touch());
+	CHECK(view.resetSettings());
+
+	wgfx::FrameBufferDesc desc;
+	desc.width = 16;
+	desc.height = 16;
+	desc.colorFormat = wgfx::TextureFormat::RGBA8;
+	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
+	REQUIRE(framebuffer.valid());
+	CHECK(view.setFrameBuffer(&framebuffer));
+}
+
+TEST(view_rejects_invalid_input)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	CHECK(!view.setRect(0, 0, 0, 10));
+	CHECK(!view.setRect(0, 0, 10, 0));
+	CHECK(!view.setRect(0, 0, wgfx::BackbufferRatio::Explicit));
+	CHECK(!view.setTransform(nullptr, IdentityMatrix));
+	CHECK(!view.setTransform(IdentityMatrix, nullptr));
+	CHECK(!view.setMode(static_cast<wgfx::ViewMode>(wgfx::ViewMode::Count)));
+	CHECK(!view.setName(nullptr));
+	CHECK(!view.setClear(static_cast<wgfx::ClearFlags>(0x8000)));
+
+	const wgfx::FrameBuffer invalidFramebuffer;
+	CHECK(!view.setFrameBuffer(&invalidFramebuffer));
+
+	const wgfx::VertexLayout layout{ position_layout() };
+	const wgfx::VertexBuffer vertexBuffer{
+		wgfx::VertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+	const wgfx::DynamicVertexBuffer dynamicVertexBuffer{
+		wgfx::DynamicVertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+	const wgfx::IndexBuffer indexBuffer{
+		wgfx::IndexBuffer::create(Indices, sizeof(Indices)) };
+	const wgfx::DynamicIndexBuffer dynamicIndexBuffer{
+		wgfx::DynamicIndexBuffer::create(Indices, sizeof(Indices)) };
+	const wgfx::Texture texture{ color_texture() };
+	const wgfx::Uniform sampler{
+		wgfx::Uniform::create("s_viewTest", wgfx::UniformType::Sampler) };
+
+	REQUIRE(vertexBuffer.valid());
+	REQUIRE(dynamicVertexBuffer.valid());
+	REQUIRE(indexBuffer.valid());
+	REQUIRE(dynamicIndexBuffer.valid());
+	REQUIRE(texture.valid());
+	REQUIRE(sampler.valid());
+
+	CHECK(!view.setVertexBuffer(4, vertexBuffer));
+	CHECK(!view.setVertexBuffer(4, dynamicVertexBuffer));
+	CHECK(!view.setVertexBuffer(0, wgfx::VertexBuffer{}));
+	CHECK(!view.setVertexBuffer(0, wgfx::DynamicVertexBuffer{}));
+	CHECK(!view.setVertexBuffer(0, vertexBuffer, 0, 0));
+	CHECK(!view.setVertexBuffer(0, dynamicVertexBuffer, 0, 0));
+	CHECK(!view.setIndexBuffer(wgfx::IndexBuffer{}));
+	CHECK(!view.setIndexBuffer(wgfx::DynamicIndexBuffer{}));
+	CHECK(!view.setIndexBuffer(indexBuffer, 0, 0));
+	CHECK(!view.setIndexBuffer(dynamicIndexBuffer, 0, 0));
+	CHECK(!view.setTexture(16, sampler, texture));
+	CHECK(!view.setTexture(0, wgfx::Uniform{}, texture));
+	CHECK(!view.setTexture(0, sampler, wgfx::Texture{}));
+	CHECK(!view.submit(wgfx::Program{}));
+
+	const wgfx::View invalid;
+	CHECK(!invalid.touch());
+	CHECK(!invalid.resetSettings());
+	CHECK(!invalid.discard());
+	CHECK(!invalid.setRect(0, 0, 16, 16));
+}
+
+TEST(view_binds_and_submits_draw)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+	CHECK(view.setRect(0, 0, 320, 180));
+	CHECK(view.setClear(wgfx::ClearFlags::ColorDepth));
+
+	const wgfx::VertexLayout layout{ position_layout() };
+	const wgfx::VertexBuffer vertexBuffer{
+		wgfx::VertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+	const wgfx::IndexBuffer indexBuffer{
+		wgfx::IndexBuffer::create(Indices, sizeof(Indices)) };
+	const wgfx::Texture texture{ color_texture() };
+	const wgfx::Uniform sampler{
+		wgfx::Uniform::create("s_viewDraw", wgfx::UniformType::Sampler) };
+
+	const wgfx::Shader vertex{
+		wgfx::Shader::create(ViewVertexShader, sizeof(ViewVertexShader)) };
+	const wgfx::Shader fragment{
+		wgfx::Shader::create(ViewFragmentShader, sizeof(ViewFragmentShader)) };
+	const wgfx::Program program{ wgfx::Program::create(vertex, fragment) };
+
+	REQUIRE(vertexBuffer.valid());
+	REQUIRE(indexBuffer.valid());
+	REQUIRE(texture.valid());
+	REQUIRE(sampler.valid());
+	REQUIRE(program.valid());
+
+	wgfx::RenderState state;
+	state.flags = wgfx::RenderStateFlags::WriteRgb
+		| wgfx::RenderStateFlags::WriteA
+		| wgfx::RenderStateFlags::WriteZ
+		| wgfx::RenderStateFlags::DepthTestLess
+		| wgfx::RenderStateFlags::PrimitiveTriStrip;
+	state.rgba = 0xffffffff;
+
+	CHECK(view.setState(state));
+	CHECK(view.setVertexBuffer(0, vertexBuffer));
+	CHECK(view.setIndexBuffer(indexBuffer, 0, 3));
+	CHECK(view.setTexture(0, sampler, texture));
+	CHECK(view.submit(program, 0));
+	CHECK(view.touch());
+	CHECK(view.discard());
+}
+
+TEST(view_binds_dynamic_buffers)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	const wgfx::VertexLayout layout{ position_layout() };
+	const wgfx::DynamicVertexBuffer vertexBuffer{
+		wgfx::DynamicVertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+	const wgfx::DynamicIndexBuffer indexBuffer{
+		wgfx::DynamicIndexBuffer::create(Indices, sizeof(Indices)) };
+
+	REQUIRE(vertexBuffer.valid());
+	REQUIRE(indexBuffer.valid());
+
+	CHECK(view.setVertexBuffer(0, vertexBuffer, 0, 3));
+	CHECK(view.setIndexBuffer(indexBuffer, 0, 3));
+	CHECK(view.setState(wgfx::RenderStateFlags::WriteRgb, 0xffffffff));
+}
+
+TEST(view_submits_occlusion_query)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	const wgfx::OcclusionQuery query{ wgfx::OcclusionQuery::create() };
+	const wgfx::Shader vertex{
+		wgfx::Shader::create(ViewVertexShader, sizeof(ViewVertexShader)) };
+	const wgfx::Shader fragment{
+		wgfx::Shader::create(ViewFragmentShader, sizeof(ViewFragmentShader)) };
+	const wgfx::Program program{ wgfx::Program::create(vertex, fragment) };
+
+	REQUIRE(query.valid());
+	REQUIRE(program.valid());
+	CHECK(view.submit(program, query));
+}
+
+TEST(view_dies_with_device)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	device->shutdown();
+	CHECK(!view.valid());
+	CHECK(view.id() == wgfx::View::InvalidId);
+	CHECK(!view.setRect(0, 0, 16, 16));
+	CHECK(!view.touch());
+	CHECK(!view.resetSettings());
+	CHECK(!view.discard());
+
+	auto recreated = wgfx::Device::create(headless_desc());
+	REQUIRE(recreated != nullptr);
+	CHECK(!view.valid());
+
+	const wgfx::View newView{ wgfx::View::create(0) };
+	CHECK(newView.valid());
+}
+
+#else
+
+TEST(view_requires_bgfx_backend)
+{
+	wgfx::View view{ wgfx::View::create(0) };
+	CHECK(!view.valid());
+	CHECK(view.id() == wgfx::View::InvalidId);
+
+	CHECK(!view.setRect(0, 0, 16, 16));
+	CHECK(!view.setRect(0, 0, wgfx::BackbufferRatio::Half));
+	CHECK(!view.setScissor());
+	CHECK(!view.setClear(wgfx::ClearFlags::ColorDepth));
+	CHECK(!view.setFrameBuffer());
+	CHECK(!view.setTransform(IdentityMatrix, IdentityMatrix));
+	CHECK(!view.setMode(wgfx::ViewMode::Default));
+	CHECK(!view.setName("main"));
+	CHECK(!view.resetSettings());
+	CHECK(!view.touch());
+	CHECK(!view.setState(wgfx::RenderState{}));
+	CHECK(!view.discard());
+
+	const wgfx::View copy{ view };
+	CHECK(!copy.valid());
+}
+
+#endif
