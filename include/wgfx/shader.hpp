@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wgfx/uniform.hpp>
+
 #include <wcore/types.hpp>
 
 namespace wgfx
@@ -8,6 +10,15 @@ namespace wgfx
 	{
 		struct ShaderAccess;
 	}
+
+	struct ShaderUniformInfo
+	{
+		static constexpr u32 MaxNameLength{ 255 };
+
+		char name[MaxNameLength + 1]{};
+		UniformType type{ UniformType::Count };
+		u16 count{ 0 };
+	};
 
 	class Shader
 	{
@@ -25,6 +36,10 @@ namespace wgfx
 
 		bool valid() const;
 		void reset();
+
+		// Returns the number of non-predefined uniforms used by the shader.
+		// When `uniforms` is non-null, up to `max` entries are filled.
+		u16 uniforms(ShaderUniformInfo* uniforms = nullptr, u16 max = 0) const;
 
 	private:
 		friend struct detail::ShaderAccess;

@@ -11,7 +11,7 @@
 - [x] VertexBuffer
 - [x] IndexBuffer
 - [x] Shader
-	- [ ] Uniform introspection via `getShaderUniforms`
+	- [x] Uniform introspection via `getShaderUniforms`
 - [x] Program
 - [x] Texture
 	- [ ] `updateTexture*`, `blit`, `readTexture`
