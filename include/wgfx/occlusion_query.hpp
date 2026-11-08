@@ -34,7 +34,7 @@ namespace wgfx
 		void reset();
 
 		bool result(OcclusionQueryResult& result, i32* pixels = nullptr) const;
-		bool setCondition(bool visible) const;
+		bool set_condition(bool visible) const;
 
 	private:
 		friend struct detail::OcclusionQueryAccess;

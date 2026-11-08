@@ -55,8 +55,8 @@ namespace wgfx
 		UniformFreq frequency() const;
 
 		bool set(const void* data, u16 count = 0xffff) const;
-		bool setView(u16 viewId, const void* data, u16 count = 0xffff) const;
-		bool setFrame(const void* data, u16 count = 0xffff) const;
+		bool set_view(u16 viewId, const void* data, u16 count = 0xffff) const;
+		bool set_frame(const void* data, u16 count = 0xffff) const;
 
 		void reset();
 

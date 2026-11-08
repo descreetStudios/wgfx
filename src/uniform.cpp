@@ -226,7 +226,7 @@ namespace wgfx
 #endif
 	}
 
-	bool Uniform::setView(
+	bool Uniform::set_view(
 		u16 viewId,
 		const void* data,
 		u16 count) const
@@ -253,7 +253,7 @@ namespace wgfx
 #endif
 	}
 
-	bool Uniform::setFrame(const void* data, u16 count) const
+	bool Uniform::set_frame(const void* data, u16 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!data || !valid() || mFreq != UniformFreq::Frame)

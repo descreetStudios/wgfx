@@ -21,7 +21,7 @@
 - [x] OcclusionQuery
 
 ## Rendering
-- [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
 - [x] Views, render state and draw submission
+- [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
 - [ ] Compute dispatch, images and indirect dispatch
 - [ ] Resize/reset and multi-window frame buffers

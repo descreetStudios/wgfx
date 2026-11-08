@@ -68,18 +68,18 @@ TEST(uniform_creates_with_frequency)
 	const float matrix[16]{};
 
 	CHECK(draw.set(color));
-	CHECK(!draw.setView(0, color));
-	CHECK(!draw.setFrame(color));
+	CHECK(!draw.set_view(0, color));
+	CHECK(!draw.set_frame(color));
 
-	CHECK(view.setView(0, matrix));
-	CHECK(!view.setView(0, matrix, 2));
+	CHECK(view.set_view(0, matrix));
+	CHECK(!view.set_view(0, matrix, 2));
 	CHECK(!view.set(color));
-	CHECK(!view.setFrame(color));
+	CHECK(!view.set_frame(color));
 
-	CHECK(frame.setFrame(color));
-	CHECK(!frame.setFrame(color, 2));
+	CHECK(frame.set_frame(color));
+	CHECK(!frame.set_frame(color, 2));
 	CHECK(!frame.set(color));
-	CHECK(!frame.setView(0, color));
+	CHECK(!frame.set_view(0, color));
 }
 
 TEST(uniform_rejects_invalid_frequency)
@@ -228,12 +228,12 @@ TEST(uniform_requires_bgfx_backend)
 	const float value[4]{};
 	CHECK(!uniform.valid());
 	CHECK(!uniform.set(value));
-	CHECK(!uniform.setView(0, value));
-	CHECK(!uniform.setFrame(value));
+	CHECK(!uniform.set_view(0, value));
+	CHECK(!uniform.set_frame(value));
 	CHECK(!view.valid());
 	CHECK(!view.set(value));
-	CHECK(!view.setView(0, value));
-	CHECK(!view.setFrame(value));
+	CHECK(!view.set_view(0, value));
+	CHECK(!view.set_frame(value));
 	uniform.reset();
 	view.reset();
 }

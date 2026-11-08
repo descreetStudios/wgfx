@@ -112,7 +112,7 @@ namespace wgfx
 #endif
 	}
 
-	bool OcclusionQuery::setCondition(bool visible) const
+	bool OcclusionQuery::set_condition(bool visible) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid())

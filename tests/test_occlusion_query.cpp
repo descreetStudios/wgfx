@@ -57,11 +57,11 @@ TEST(occlusion_query_sets_condition)
 	const wgfx::OcclusionQuery query{ wgfx::OcclusionQuery::create() };
 	REQUIRE(query.valid());
 
-	CHECK(query.setCondition(true));
-	CHECK(query.setCondition(false));
+	CHECK(query.set_condition(true));
+	CHECK(query.set_condition(false));
 
 	const wgfx::OcclusionQuery uninitialized;
-	CHECK(!uninitialized.setCondition(true));
+	CHECK(!uninitialized.set_condition(true));
 }
 
 TEST(occlusion_query_requires_active_device)
@@ -71,7 +71,7 @@ TEST(occlusion_query_requires_active_device)
 	wgfx::OcclusionQueryResult result{ wgfx::OcclusionQueryResult::NoResult };
 	const wgfx::OcclusionQuery query;
 	CHECK(!query.result(result));
-	CHECK(!query.setCondition(true));
+	CHECK(!query.set_condition(true));
 }
 
 TEST(occlusion_query_is_move_only)
@@ -126,7 +126,7 @@ TEST(occlusion_query_dies_with_device)
 
 	wgfx::OcclusionQueryResult result{ wgfx::OcclusionQueryResult::NoResult };
 	CHECK(!query.result(result));
-	CHECK(!query.setCondition(true));
+	CHECK(!query.set_condition(true));
 
 	// The stale query is left with an old generation; reset must be a no-op.
 	query.reset();
@@ -157,7 +157,7 @@ TEST(occlusion_query_requires_bgfx_backend)
 
 	CHECK(!query.valid());
 	CHECK(!query.result(result));
-	CHECK(!query.setCondition(true));
+	CHECK(!query.set_condition(true));
 	query.reset();
 }
 
