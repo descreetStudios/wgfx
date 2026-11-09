@@ -1,8 +1,11 @@
+#include <wcore/io.hpp>
 #include <wcore/test.hpp>
 #include <wgfx/wgfx.hpp>
 
-#include <utility>
 #include <cstring>
+#include <filesystem>
+#include <span>
+#include <utility>
 #include <vector>
 
 using namespace wcore;
@@ -262,7 +265,42 @@ TEST(shader_handle_is_stale_after_recreate)
 	CHECK(!shader.valid());
 }
 
+TEST(shader_loads_compiled_binary_from_file)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const auto temp{ wcore::io::temp_directory() };
+	REQUIRE(temp.has_value());
+	const std::filesystem::path path{ *temp / "wgfx_shader_load_test.bin" };
+
+	const std::span<const std::byte> bytes{
+		reinterpret_cast<const std::byte*>(MinimalVertexShader),
+		sizeof(MinimalVertexShader) };
+	REQUIRE(wcore::io::write_binary(path, bytes));
+
+	const auto shader{ wgfx::Shader::load(path) };
+	CHECK(shader.valid());
+
+	wcore::io::remove_file(path);
+}
+
+TEST(shader_load_missing_file_fails)
+{
+	const auto temp{ wcore::io::temp_directory() };
+	REQUIRE(temp.has_value());
+
+	const auto shader{ wgfx::Shader::load(*temp / "wgfx_missing_shader.bin") };
+	CHECK(!shader.valid());
+}
+
 #else
+
+TEST(shader_load_requires_bgfx_backend)
+{
+	const auto shader{ wgfx::Shader::load("wgfx_missing_shader.bin") };
+	CHECK(!shader.valid());
+}
 
 TEST(shader_requires_bgfx_backend)
 {

@@ -4,6 +4,8 @@
 
 #include <wcore/types.hpp>
 
+#include <filesystem>
+
 namespace wgfx
 {
 	namespace detail
@@ -33,6 +35,7 @@ namespace wgfx
 		Shader& operator=(Shader&& other) noexcept;
 
 		static Shader create(const void* data, u32 size);
+		static Shader load(const std::filesystem::path& path);
 
 		bool valid() const;
 		void reset();

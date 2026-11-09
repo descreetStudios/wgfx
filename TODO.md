@@ -22,6 +22,6 @@
 
 ## Rendering
 - [x] Views, render state and draw submission
-- [ ] Shader pipeline and toolchain (shaderc via bgfx.cmake)
+- [x] Shader pipeline and toolchain
 - [ ] Compute dispatch, images and indirect dispatch
 - [ ] Resize/reset and multi-window frame buffers

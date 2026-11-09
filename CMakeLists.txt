@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 project(wgfx VERSION 0.1.0 LANGUAGES CXX)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(WgfxShaders)
+
 add_library(wgfx STATIC
     "src/version.cpp"
     "src/backend.cpp"
@@ -47,15 +50,28 @@ FetchContent_GetProperties(wcore SOURCE_DIR WGFX_WCORE_SOURCE_DIR)
 
 # --- bgfx --- #
 option(WGFX_WITH_BGFX "Build the bgfx rendering backend" ON)
+option(WGFX_WITH_SHADERC "Build bgfx's shaderc tool for compiling shaders" OFF)
+if(WGFX_WITH_SHADERC AND NOT WGFX_WITH_BGFX)
+    message(FATAL_ERROR "WGFX_WITH_SHADERC requires WGFX_WITH_BGFX=ON")
+endif()
 if(WGFX_WITH_BGFX)
     set(WGFX_BGFX_CMAKE_DIR "" CACHE PATH
         "Path to a local bgfx.cmake checkout (empty: fetch from GitHub)")
+
+    if(WGFX_WITH_SHADERC)
+        set(BGFX_BUILD_TOOLS ON CACHE BOOL "" FORCE)
+        set(BGFX_BUILD_TOOLS_SHADER ON CACHE BOOL "" FORCE)
+        set(BGFX_BUILD_TOOLS_BIN2C OFF CACHE BOOL "" FORCE)
+        set(BGFX_BUILD_TOOLS_GEOMETRY OFF CACHE BOOL "" FORCE)
+        set(BGFX_BUILD_TOOLS_TEXTURE OFF CACHE BOOL "" FORCE)
+    else()
+        set(BGFX_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    endif()
 
     if(WGFX_BGFX_CMAKE_DIR)
         add_subdirectory("${WGFX_BGFX_CMAKE_DIR}"
             "${CMAKE_BINARY_DIR}/_deps/bgfx-cmake-build")
     else()
-        set(BGFX_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
         set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(BGFX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
         set(BGFX_INSTALL OFF CACHE BOOL "" FORCE)
@@ -69,8 +85,25 @@ if(WGFX_WITH_BGFX)
         FetchContent_MakeAvailable(bgfx_cmake)
     endif()
 
+    if(NOT WGFX_BGFX_SHADER_INCLUDE_DIR)
+        FetchContent_GetProperties(bgfx SOURCE_DIR _wgfx_bgfx_source)
+        if(NOT _wgfx_bgfx_source
+            AND WGFX_BGFX_CMAKE_DIR
+            AND IS_DIRECTORY "${WGFX_BGFX_CMAKE_DIR}/bgfx/src")
+            set(_wgfx_bgfx_source "${WGFX_BGFX_CMAKE_DIR}/bgfx")
+        endif()
+        if(_wgfx_bgfx_source)
+            set(WGFX_BGFX_SHADER_INCLUDE_DIR "${_wgfx_bgfx_source}/src" CACHE PATH
+                "Directory containing bgfx_shader.sh and bgfx_compute.sh." FORCE)
+        endif()
+    endif()
+
     target_link_libraries(wgfx PRIVATE bgfx)
     target_compile_definitions(wgfx PUBLIC WGFX_BACKEND_BGFX=1)
+endif()
+
+if(WGFX_WITH_SHADERC)
+    wgfx_shaderc_require()
 endif()
 
 # --- Targets --- #

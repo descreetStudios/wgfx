@@ -2,7 +2,10 @@
 
 #include "device_internal.hpp"
 
+#include <wcore/io.hpp>
+
 #include <cstring>
+#include <limits>
 #include <vector>
 
 #if defined(WGFX_BACKEND_BGFX)
@@ -87,6 +90,18 @@ namespace wgfx
 #endif
 
 		return result;
+	}
+
+	Shader Shader::load(const std::filesystem::path& path)
+	{
+		const auto bytes{ wcore::io::read_binary(path) };
+		if (!bytes || bytes->empty())
+			return Shader{};
+
+		if (bytes->size() > std::numeric_limits<u32>::max())
+			return Shader{};
+
+		return create(bytes->data(), static_cast<u32>(bytes->size()));
 	}
 
 	bool Shader::valid() const

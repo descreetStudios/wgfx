@@ -76,6 +76,61 @@ To build the core library without bgfx:
 cmake --preset release -DWGFX_WITH_BGFX=OFF
 ```
 
+## Shaders
+
+Shader sources are written in bgfx's GLSL dialect (`.sc`) and compiled ahead of
+time with bgfx's `shaderc`. WGFX does not ship shaders; the compiler is opt-in
+so the core library stays light.
+
+Build the bundled compiler:
+
+```bash
+cmake --preset release -DWGFX_WITH_SHADERC=ON
+```
+
+This builds bgfx's `shaderc` tool (and its glslang/SPIR-V dependencies), so it
+adds noticeably to the first build. After that, only changed shaders rebuild.
+
+Or point WGFX at an existing `shaderc` executable:
+
+```bash
+cmake --preset release -DWGFX_SHADERC_EXECUTABLE=/path/to/shaderc
+```
+
+Compile shaders as part of a target:
+
+```cmake
+wgfx_add_shader(
+    OUTPUT app_vertex
+    SOURCE shaders/vs_main.sc
+    STAGE vertex
+    VARYINGDEF shaders/varying.def.sc)
+
+wgfx_add_shader(
+    OUTPUT app_fragment
+    SOURCE shaders/fs_main.sc
+    STAGE fragment
+    VARYINGDEF shaders/varying.def.sc)
+
+wgfx_target_add_shaders(app OUTPUTS ${app_vertex} ${app_fragment})
+```
+
+Outputs default to `<build>/shaders/<platform>/<source-name>.bin`. `PLATFORM`,
+`PROFILE`, `NAME`, `OUTPUT_DIR`, `INCLUDES` and `DEFINES` can be set per
+shader. Without overrides the platform and profile follow the host
+(`windows`/`s_5_0`, `linux`/`spirv`, `osx`/`metal`, ...).
+
+Load the compiled binaries at runtime:
+
+```cpp
+const auto vertex = wgfx::Shader::load("shaders/windows/vs_main.bin");
+const auto fragment = wgfx::Shader::load("shaders/windows/fs_main.bin");
+const auto program = wgfx::Program::create(vertex, fragment);
+```
+
+`Shader::load` returns an invalid shader when the file is missing, empty, or
+the device is not active.
+
 ## Use it in your project
 
 ```cpp
