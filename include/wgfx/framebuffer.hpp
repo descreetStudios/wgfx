@@ -87,6 +87,8 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		bool set_name(const char* name, i32 length = -1) const;
+
 		bool is_swap_chain() const;
 		const SwapChainDesc& swap_chain_desc() const;
 		bool resize(u32 width, u32 height);

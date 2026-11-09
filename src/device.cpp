@@ -1,7 +1,13 @@
 #include <wgfx/device.hpp>
 
 #if defined(WGFX_BACKEND_BGFX)
+#include "framebuffer_internal.hpp"
+
 #include <bgfx/bgfx.h>
+
+#include <cstdarg>
+#include <cstring>
+#include <limits>
 #endif
 
 namespace wgfx
@@ -73,6 +79,32 @@ namespace wgfx
 			swapChain.height = desc.height;
 			return swapChain;
 		}
+
+#define WGFX_DEBUG_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u32>(DebugFlags::name) == (bgfxName), \
+			"DebugFlags::" #name " must mirror " #bgfxName)
+
+		WGFX_DEBUG_MIRROR(None, BGFX_DEBUG_NONE);
+		WGFX_DEBUG_MIRROR(Wireframe, BGFX_DEBUG_WIREFRAME);
+		WGFX_DEBUG_MIRROR(InfinitelyFastHardware, BGFX_DEBUG_IFH);
+		WGFX_DEBUG_MIRROR(Stats, BGFX_DEBUG_STATS);
+		WGFX_DEBUG_MIRROR(Text, BGFX_DEBUG_TEXT);
+		WGFX_DEBUG_MIRROR(Profiler, BGFX_DEBUG_PROFILER);
+
+#undef WGFX_DEBUG_MIRROR
+
+#define WGFX_TOPOLOGY_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u8>(PrimitiveTopology::name) == (bgfxName), \
+			"PrimitiveTopology::" #name " must mirror " #bgfxName)
+
+		WGFX_TOPOLOGY_MIRROR(TriangleList, bgfx::Topology::TriList);
+		WGFX_TOPOLOGY_MIRROR(TriangleStrip, bgfx::Topology::TriStrip);
+		WGFX_TOPOLOGY_MIRROR(LineList, bgfx::Topology::LineList);
+		WGFX_TOPOLOGY_MIRROR(LineStrip, bgfx::Topology::LineStrip);
+		WGFX_TOPOLOGY_MIRROR(PointList, bgfx::Topology::PointList);
+		WGFX_TOPOLOGY_MIRROR(Count, bgfx::Topology::Count);
+
+#undef WGFX_TOPOLOGY_MIRROR
 #endif
 	} // anonymous namespace
 
@@ -124,7 +156,7 @@ namespace wgfx
 		++gGeneration;
 		mValid = true;
 
-		if (const bgfx::Caps* caps{ bgfx::getCaps() })
+		if (const bgfx::Caps * caps{ bgfx::getCaps() })
 		{
 			mCaps.renderer = from_bgfx(caps->rendererType);
 			mCaps.homogeneousDepth = caps->homogeneousDepth;
@@ -258,6 +290,213 @@ namespace wgfx
 		return mFrame;
 #else
 		return 0;
+#endif
+	}
+
+	bool Device::set_debug(
+		DebugFlags flags,
+		const FrameBuffer* framebuffer,
+		u8 scale)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		constexpr u32 DebugFlagsMask{ 0x1f };
+
+		if (!mValid
+			|| (framebuffer && !framebuffer->valid())
+			|| (static_cast<u32>(flags) & ~DebugFlagsMask) != 0)
+		{
+			return false;
+		}
+
+		const bgfx::FrameBufferHandle handle{ framebuffer
+			? detail::FrameBufferAccess::native(*framebuffer)
+			: bgfx::FrameBufferHandle{ bgfx::kInvalidHandle } };
+		bgfx::setDebug(static_cast<u32>(flags), handle, scale);
+		return true;
+#else
+		(void)flags;
+		(void)framebuffer;
+		(void)scale;
+		return false;
+#endif
+	}
+
+	Stats Device::stats() const
+	{
+		Stats result;
+
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid)
+			return result;
+
+		const bgfx::Stats* stats{ bgfx::getStats() };
+		if (!stats)
+			return result;
+
+		result.cpuTimeFrame = stats->cpuTimeFrame;
+		result.cpuTimeBegin = stats->cpuTimeBegin;
+		result.cpuTimeEnd = stats->cpuTimeEnd;
+		result.cpuTimerFreq = stats->cpuTimerFreq;
+		result.gpuTimeBegin = stats->gpuTimeBegin;
+		result.gpuTimeEnd = stats->gpuTimeEnd;
+		result.gpuTimerFreq = stats->gpuTimerFreq;
+		result.waitRender = stats->waitRender;
+		result.waitSubmit = stats->waitSubmit;
+		result.latencySleep = stats->latencySleep;
+		result.latencyTotal = stats->latencyTotal;
+		result.latencySimulation = stats->latencySimulation;
+		result.latencyRenderSubmit = stats->latencyRenderSubmit;
+		result.latencyPresent = stats->latencyPresent;
+		result.latencyQueue = stats->latencyQueue;
+		result.latencyGpu = stats->latencyGpu;
+
+		result.numDraw = stats->numDraw;
+		result.numCompute = stats->numCompute;
+		result.numBlit = stats->numBlit;
+		result.numBlitRepack = stats->numBlitRepack;
+		result.numDrawCallsPeak = stats->numDrawCallsPeak;
+		result.maxGpuLatency = stats->maxGpuLatency;
+		result.gpuFrameNum = stats->gpuFrameNum;
+
+		result.numDynamicIndexBuffers = stats->numDynamicIndexBuffers;
+		result.numDynamicVertexBuffers = stats->numDynamicVertexBuffers;
+		result.numFrameBuffers = stats->numFrameBuffers;
+		result.numIndexBuffers = stats->numIndexBuffers;
+		result.numOcclusionQueries = stats->numOcclusionQueries;
+		result.numPrograms = stats->numPrograms;
+		result.numShaders = stats->numShaders;
+		result.numTextures = stats->numTextures;
+		result.numUniforms = stats->numUniforms;
+		result.numVertexBuffers = stats->numVertexBuffers;
+		result.numVertexLayouts = stats->numVertexLayouts;
+
+		result.textureMemoryUsed = stats->textureMemoryUsed;
+		result.rtMemoryUsed = stats->rtMemoryUsed;
+		result.transientVbUsed = stats->transientVbUsed;
+		result.transientIbUsed = stats->transientIbUsed;
+
+		constexpr u32 TopologyCount{
+			static_cast<u32>(PrimitiveTopology::Count) };
+		for (u32 index = 0; index < TopologyCount; ++index)
+			result.numPrims[index] = stats->numPrims[index];
+
+		result.gpuMemoryMax = stats->gpuMemoryMax;
+		result.gpuMemoryUsed = stats->gpuMemoryUsed;
+
+		result.width = stats->width;
+		result.height = stats->height;
+		result.textWidth = stats->textWidth;
+		result.textHeight = stats->textHeight;
+
+		if (stats->viewStats)
+		{
+			result.views.resize(stats->numViews);
+			for (u32 index = 0; index < stats->numViews; ++index)
+			{
+				const bgfx::ViewStats& source{ stats->viewStats[index] };
+				ViewStats& target{ result.views[index] };
+				std::memcpy(target.name, source.name, sizeof(target.name));
+				target.view = source.view;
+				target.cpuTimeBegin = source.cpuTimeBegin;
+				target.cpuTimeEnd = source.cpuTimeEnd;
+				target.gpuTimeBegin = source.gpuTimeBegin;
+				target.gpuTimeEnd = source.gpuTimeEnd;
+				target.gpuFrameNum = source.gpuFrameNum;
+			}
+		}
+
+		if (stats->encoderStats)
+		{
+			result.encoders.resize(stats->numEncoders);
+			for (u32 index = 0; index < stats->numEncoders; ++index)
+			{
+				const bgfx::EncoderStats& source{ stats->encoderStats[index] };
+				EncoderStats& target{ result.encoders[index] };
+				target.cpuTimeBegin = source.cpuTimeBegin;
+				target.cpuTimeEnd = source.cpuTimeEnd;
+			}
+		}
+#endif
+
+		return result;
+	}
+
+	bool Device::debug_text_clear(u8 attr, bool small)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid)
+			return false;
+
+		bgfx::dbgTextClear(attr, small);
+		return true;
+#else
+		(void)attr;
+		(void)small;
+		return false;
+#endif
+	}
+
+	bool Device::debug_text_printf(
+		u16 x, u16 y, u8 attr,
+		const char* format,
+		...)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid || !format)
+			return false;
+
+		va_list args;
+		va_start(args, format);
+		bgfx::dbgTextPrintfVargs(x, y, attr, format, args);
+		va_end(args);
+		return true;
+#else
+		(void)x;
+		(void)y;
+		(void)attr;
+		(void)format;
+		return false;
+#endif
+	}
+
+	bool Device::debug_text_image(
+		u16 x, u16 y,
+		u16 width, u16 height,
+		const void* data,
+		u16 pitch)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid || !data)
+			return false;
+
+		bgfx::dbgTextImage(x, y, width, height, data, pitch);
+		return true;
+#else
+		(void)x;
+		(void)y;
+		(void)width;
+		(void)height;
+		(void)data;
+		(void)pitch;
+		return false;
+#endif
+	}
+
+	bool Device::set_marker(const char* name, i32 length)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid || !name)
+			return false;
+
+		const i32 markerLength{ length < 0
+			? std::numeric_limits<i32>::max()
+			: length };
+		bgfx::setMarker(name, markerLength);
+		return true;
+#else
+		(void)name;
+		(void)length;
+		return false;
 #endif
 	}
 

@@ -217,6 +217,8 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		bool set_name(const char* name, i32 length = -1) const;
+
 		bool update_2d(u16 layer, u8 mip,
 			u16 x, u16 y, u16 width, u16 height,
 			const void* data, u32 size,

@@ -40,6 +40,8 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		bool set_name(const char* name, i32 length = -1) const;
+
 		u16 uniforms(ShaderUniformInfo* uniforms = nullptr, u16 max = 0) const;
 
 	private:

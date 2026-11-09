@@ -20,4 +20,5 @@
 #include <wgfx/occlusion_query.hpp>
 #include <wgfx/transient_buffer.hpp>
 #include <wgfx/render_state.hpp>
+#include <wgfx/diagnostics.hpp>
 #include <wgfx/view.hpp>

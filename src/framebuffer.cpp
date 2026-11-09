@@ -2,6 +2,7 @@
 
 #include "device_internal.hpp"
 
+#include <limits>
 #include <utility>
 
 #if defined(WGFX_BACKEND_BGFX)
@@ -334,6 +335,24 @@ namespace wgfx
 		return mHandle != InvalidHandle
 			&& detail::device_active()
 			&& mGeneration == detail::device_generation();
+	}
+
+	bool FrameBuffer::set_name(const char* name, i32 length) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !name)
+			return false;
+
+		bgfx::setName(
+			detail::FrameBufferAccess::native(*this),
+			name,
+			length < 0 ? std::numeric_limits<i32>::max() : length);
+		return true;
+#else
+		(void)name;
+		(void)length;
+		return false;
+#endif
 	}
 
 	bool FrameBuffer::is_swap_chain() const

@@ -111,13 +111,32 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
+	bool Shader::set_name(const char* name, i32 length) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !name)
+			return false;
+
+		bgfx::setName(
+			detail::ShaderAccess::native(*this),
+			name,
+			length < 0 ? std::numeric_limits<i32>::max() : length);
+		return true;
+#else
+		(void)name;
+		(void)length;
+		return false;
+#endif
+	}
+
 	u16 Shader::uniforms(ShaderUniformInfo* uniforms, u16 max) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid())
 			return 0;
 
-		const bgfx::ShaderHandle handle{ detail::ShaderAccess::native(*this) };
+		const bgfx::ShaderHandle handle{
+			detail::ShaderAccess::native(*this) };
 		const u16 count{ bgfx::getShaderUniforms(handle) };
 		if (!uniforms || max == 0)
 			return count;

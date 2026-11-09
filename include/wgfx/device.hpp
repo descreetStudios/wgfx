@@ -1,11 +1,15 @@
 #pragma once
 
+#include <wgfx/diagnostics.hpp>
+
 #include <wcore/types.hpp>
 
 #include <memory>
 
 namespace wgfx
 {
+	class FrameBuffer;
+
 	enum class Renderer : u8
 	{
 		Auto,
@@ -97,6 +101,27 @@ namespace wgfx
 		void set_vsync(bool enabled);
 
 		u32 frame();
+
+		bool set_debug(DebugFlags flags,
+			const FrameBuffer* framebuffer = nullptr,
+			u8 scale = 0);
+		Stats stats() const;
+
+		bool debug_text_clear(u8 attr = 0, bool small = false);
+		bool debug_text_printf(
+			u16 x,
+			u16 y,
+			u8 attr,
+			const char* format,
+			...);
+		bool debug_text_image(
+			u16 x,
+			u16 y,
+			u16 width,
+			u16 height,
+			const void* data,
+			u16 pitch);
+		bool set_marker(const char* name, i32 length = -1);
 
 	private:
 		explicit Device(const DeviceDesc& desc);

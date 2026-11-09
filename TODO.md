@@ -28,4 +28,4 @@
 - [x] Instancing and indirect draws
 - [x] Transient buffers
 - [x] Advanced view/draw state
-- [ ] Diagnostics and debugging
+- [x] Diagnostics and debugging
