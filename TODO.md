@@ -26,6 +26,6 @@
 - [x] Compute dispatch, images and indirect dispatch
 - [x] Resize/reset and multi-window frame buffers
 - [x] Instancing and indirect draws
-- [ ] Transient buffers
+- [x] Transient buffers
 - [ ] Advanced view/draw state
 - [ ] Diagnostics and debugging

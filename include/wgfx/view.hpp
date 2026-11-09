@@ -11,8 +11,11 @@ namespace wgfx
 	class FrameBuffer;
 	class IndexBuffer;
 	class IndirectBuffer;
+	class InstanceDataBuffer;
 	class OcclusionQuery;
 	class Program;
+	class TransientIndexBuffer;
+	class TransientVertexBuffer;
 	class Uniform;
 	class VertexBuffer;
 
@@ -109,6 +112,9 @@ namespace wgfx
 		bool set_vertex_buffer(u8 stream, const DynamicVertexBuffer& buffer) const;
 		bool set_vertex_buffer(u8 stream, const DynamicVertexBuffer& buffer,
 			u32 startVertex, u32 numVertices) const;
+		bool set_vertex_buffer(u8 stream, const TransientVertexBuffer& buffer) const;
+		bool set_vertex_buffer(u8 stream, const TransientVertexBuffer& buffer,
+			u32 startVertex, u32 numVertices) const;
 
 		bool set_index_buffer(const IndexBuffer& buffer) const;
 		bool set_index_buffer(const IndexBuffer& buffer,
@@ -116,12 +122,17 @@ namespace wgfx
 		bool set_index_buffer(const DynamicIndexBuffer& buffer) const;
 		bool set_index_buffer(const DynamicIndexBuffer& buffer,
 			u32 firstIndex, u32 numIndices) const;
+		bool set_index_buffer(const TransientIndexBuffer& buffer) const;
+		bool set_index_buffer(const TransientIndexBuffer& buffer,
+			u32 firstIndex, u32 numIndices) const;
 
 		bool set_instance_count(u32 count) const;
 		bool set_instance_data_buffer(const VertexBuffer& buffer,
 			u32 startVertex, u32 numInstances) const;
 		bool set_instance_data_buffer(const DynamicVertexBuffer& buffer,
 			u32 startVertex, u32 numInstances) const;
+		bool set_instance_data_buffer(const InstanceDataBuffer& buffer,
+			u32 start = 0, u32 num = WholeBuffer) const;
 
 		bool set_texture(u8 stage,
 			const Uniform& sampler,

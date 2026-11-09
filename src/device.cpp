@@ -136,6 +136,9 @@ namespace wgfx
 			mCaps.maxTextureLayers = caps->limits.maxTextureLayers;
 			mCaps.maxViews = caps->limits.maxViews;
 			mCaps.maxFrameBuffers = caps->limits.maxFrameBuffers;
+			mCaps.maxTransientVbSize = caps->limits.maxTransientVbSize;
+			mCaps.maxTransientIbSize = caps->limits.maxTransientIbSize;
+			mCaps.maxInstanceData = caps->limits.maxInstanceData;
 			mCaps.swapChain = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
 			mCaps.drawIndirect = 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
 			mCaps.drawIndirectCount =

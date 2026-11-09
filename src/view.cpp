@@ -1,4 +1,5 @@
 #include <wgfx/view.hpp>
+#include <wgfx/transient_buffer.hpp>
 
 #include "device_internal.hpp"
 
@@ -11,6 +12,7 @@
 #include "occlusion_query_internal.hpp"
 #include "program_internal.hpp"
 #include "texture_internal.hpp"
+#include "transient_buffer_internal.hpp"
 #include "uniform_internal.hpp"
 #include "vertex_buffer_internal.hpp"
 
@@ -587,6 +589,43 @@ namespace wgfx
 #endif
 	}
 
+	bool View::set_vertex_buffer(
+		u8 stream,
+		const TransientVertexBuffer& buffer) const
+	{
+		return set_vertex_buffer(stream, buffer, 0, buffer.count());
+	}
+
+	bool View::set_vertex_buffer(
+		u8 stream,
+		const TransientVertexBuffer& buffer,
+		u32 startVertex,
+		u32 numVertices) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+			|| !buffer.valid()
+			|| !valid_stream(stream)
+			|| numVertices == 0
+			|| startVertex >= buffer.count()
+			|| numVertices > buffer.count() - startVertex)
+		{
+			return false;
+		}
+
+		const bgfx::TransientVertexBuffer native{
+			detail::TransientBufferAccess::native(buffer) };
+		bgfx::setVertexBuffer(stream, &native, startVertex, numVertices);
+		return true;
+#else
+		(void)stream;
+		(void)buffer;
+		(void)startVertex;
+		(void)numVertices;
+		return false;
+#endif
+	}
+
 	bool View::set_index_buffer(const IndexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -660,6 +699,38 @@ namespace wgfx
 #endif
 	}
 
+	bool View::set_index_buffer(const TransientIndexBuffer& buffer) const
+	{
+		return set_index_buffer(buffer, 0, buffer.count());
+	}
+
+	bool View::set_index_buffer(
+		const TransientIndexBuffer& buffer,
+		u32 firstIndex,
+		u32 numIndices) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+			|| !buffer.valid()
+			|| numIndices == 0
+			|| firstIndex >= buffer.count()
+			|| numIndices > buffer.count() - firstIndex)
+		{
+			return false;
+		}
+
+		const bgfx::TransientIndexBuffer native{
+			detail::TransientBufferAccess::native(buffer) };
+		bgfx::setIndexBuffer(&native, firstIndex, numIndices);
+		return true;
+#else
+		(void)buffer;
+		(void)firstIndex;
+		(void)numIndices;
+		return false;
+#endif
+	}
+
 	bool View::set_instance_count(u32 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -714,6 +785,36 @@ namespace wgfx
 		(void)buffer;
 		(void)startVertex;
 		(void)numInstances;
+		return false;
+#endif
+	}
+
+	bool View::set_instance_data_buffer(
+		const InstanceDataBuffer& buffer,
+		u32 start,
+		u32 num) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !buffer.valid())
+			return false;
+
+		const u32 count{ buffer.count() };
+		if (start >= count)
+			return false;
+
+		if (num == WholeBuffer)
+			num = count - start;
+		else if (num == 0 || num > count - start)
+			return false;
+
+		const bgfx::InstanceDataBuffer native{
+			detail::TransientBufferAccess::native(buffer) };
+		bgfx::setInstanceDataBuffer(&native, start, num);
+		return true;
+#else
+		(void)buffer;
+		(void)start;
+		(void)num;
 		return false;
 #endif
 	}
