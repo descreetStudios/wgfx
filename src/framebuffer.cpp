@@ -146,10 +146,12 @@ namespace wgfx
 		, mGeneration{ other.mGeneration }
 		, mColorTexture{ std::move(other.mColorTexture) }
 		, mDepthTexture{ std::move(other.mDepthTexture) }
+		, mSwapChainDesc{ other.mSwapChainDesc }
 		, mSwapChain{ other.mSwapChain }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mSwapChainDesc = {};
 		other.mSwapChain = false;
 	}
 
@@ -163,9 +165,11 @@ namespace wgfx
 		mGeneration = other.mGeneration;
 		mColorTexture = std::move(other.mColorTexture);
 		mDepthTexture = std::move(other.mDepthTexture);
+		mSwapChainDesc = other.mSwapChainDesc;
 		mSwapChain = other.mSwapChain;
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mSwapChainDesc = {};
 		other.mSwapChain = false;
 		return *this;
 	}
@@ -266,6 +270,7 @@ namespace wgfx
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mSwapChainDesc = desc;
 		result.mSwapChain = true;
 #else
 		(void)desc;
@@ -331,6 +336,27 @@ namespace wgfx
 			&& mGeneration == detail::device_generation();
 	}
 
+	bool FrameBuffer::is_swap_chain() const
+	{
+		return valid() && mSwapChain;
+	}
+
+	const SwapChainDesc& FrameBuffer::swap_chain_desc() const
+	{
+		return mSwapChainDesc;
+	}
+
+	bool FrameBuffer::resize(u32 width, u32 height)
+	{
+		if (width == 0 || height == 0)
+			return false;
+
+		SwapChainDesc desc{ mSwapChainDesc };
+		desc.width = width;
+		desc.height = height;
+		return update_swap_chain(desc);
+	}
+
 	bool FrameBuffer::update_swap_chain(const SwapChainDesc& desc)
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -345,6 +371,7 @@ namespace wgfx
 		bgfx::updateSwapChain(
 			bgfx::FrameBufferHandle{ mHandle },
 			to_bgfx(desc));
+		mSwapChainDesc = desc;
 		return true;
 #else
 		(void)desc;
@@ -377,6 +404,7 @@ namespace wgfx
 		mGeneration = 0;
 		mColorTexture.reset();
 		mDepthTexture.reset();
+		mSwapChainDesc = {};
 		mSwapChain = false;
 	}
 }

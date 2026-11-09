@@ -367,11 +367,111 @@ TEST(framebuffer_updates_swap_chain)
 	desc.flags = wgfx::SwapChainFlags::SrgbBackbuffer;
 	CHECK(framebuffer.update_swap_chain(desc));
 	CHECK(framebuffer.valid());
+	CHECK_EQ(framebuffer.swap_chain_desc().width, 128u);
+	CHECK_EQ(framebuffer.swap_chain_desc().height, 96u);
+	CHECK(framebuffer.swap_chain_desc().flags
+		== wgfx::SwapChainFlags::SrgbBackbuffer);
 
 	// A regular render-target frame buffer is not a swap chain.
 	auto regular = wgfx::FrameBuffer::create(color_desc(16, 16));
 	REQUIRE(regular.valid());
 	CHECK(!regular.update_swap_chain(swap_chain_desc(16, 16)));
+}
+
+TEST(framebuffer_exposes_swap_chain_description)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	wgfx::SwapChainDesc desc{ swap_chain_desc(64, 48) };
+	desc.flags = wgfx::SwapChainFlags::SrgbBackbuffer;
+	desc.numBackBuffers = 2;
+
+	const wgfx::FrameBuffer framebuffer{ wgfx::FrameBuffer::create(desc) };
+	REQUIRE(framebuffer.valid());
+	CHECK(framebuffer.is_swap_chain());
+	CHECK_EQ(framebuffer.swap_chain_desc().width, 64u);
+	CHECK_EQ(framebuffer.swap_chain_desc().height, 48u);
+	CHECK(framebuffer.swap_chain_desc().flags
+		== wgfx::SwapChainFlags::SrgbBackbuffer);
+	CHECK_EQ(framebuffer.swap_chain_desc().numBackBuffers, 2u);
+
+	// Offscreen frame buffers do not report a swap chain description.
+	const wgfx::FrameBuffer offscreen{
+		wgfx::FrameBuffer::create(color_desc(16, 16)) };
+	REQUIRE(offscreen.valid());
+	CHECK(!offscreen.is_swap_chain());
+	CHECK_EQ(offscreen.swap_chain_desc().width, 0u);
+}
+
+TEST(framebuffer_resizes_swap_chain_in_place)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
+	REQUIRE(framebuffer.valid());
+
+	CHECK(framebuffer.resize(128, 96));
+	CHECK(framebuffer.valid());
+	CHECK_EQ(framebuffer.swap_chain_desc().width, 128u);
+	CHECK_EQ(framebuffer.swap_chain_desc().height, 96u);
+
+	// The handle and other description fields survive the resize.
+	CHECK(framebuffer.resize(256, 144));
+	CHECK_EQ(framebuffer.swap_chain_desc().width, 256u);
+	CHECK_EQ(framebuffer.swap_chain_desc().height, 144u);
+
+	CHECK(!framebuffer.resize(0, 144));
+	CHECK(!framebuffer.resize(256, 0));
+	CHECK_EQ(framebuffer.swap_chain_desc().width, 256u);
+	CHECK(framebuffer.valid());
+
+	// A regular render-target frame buffer cannot be resized in place.
+	auto regular = wgfx::FrameBuffer::create(color_desc(16, 16));
+	REQUIRE(regular.valid());
+	CHECK(!regular.resize(32, 32));
+}
+
+TEST(framebuffer_supports_multiple_windows)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().swapChain);
+
+	// Distinct native window handles. The Noop renderer never dereferences them.
+	int firstWindow{ 0 };
+	int secondWindow{ 0 };
+
+	wgfx::SwapChainDesc firstDesc{ swap_chain_desc(64, 48) };
+	firstDesc.window.handle = &firstWindow;
+	wgfx::SwapChainDesc secondDesc{ swap_chain_desc(96, 72) };
+	secondDesc.window.handle = &secondWindow;
+
+	auto first = wgfx::FrameBuffer::create(firstDesc);
+	auto second = wgfx::FrameBuffer::create(secondDesc);
+	REQUIRE(first.valid());
+	REQUIRE(second.valid());
+	CHECK(first.is_swap_chain());
+	CHECK(second.is_swap_chain());
+
+	// Each window resizes independently.
+	CHECK(first.resize(128, 96));
+	CHECK_EQ(first.swap_chain_desc().width, 128u);
+	CHECK_EQ(second.swap_chain_desc().width, 96u);
+	CHECK_EQ(second.swap_chain_desc().height, 72u);
+
+	CHECK(second.resize(192, 144));
+	CHECK_EQ(second.swap_chain_desc().width, 192u);
+	CHECK_EQ(first.swap_chain_desc().width, 128u);
+
+	// Releasing one window leaves the other usable.
+	second.reset();
+	CHECK(!second.valid());
+	CHECK(first.valid());
+	CHECK(first.resize(320, 240));
 }
 
 TEST(framebuffer_rejects_invalid_swap_chain)
@@ -404,9 +504,12 @@ TEST(framebuffer_swap_chain_dies_with_device)
 
 	auto framebuffer = wgfx::FrameBuffer::create(swap_chain_desc(64, 48));
 	REQUIRE(framebuffer.valid());
+	REQUIRE(framebuffer.is_swap_chain());
 
 	device->shutdown();
 	CHECK(!framebuffer.valid());
+	CHECK(!framebuffer.is_swap_chain());
+	CHECK(!framebuffer.resize(128, 96));
 	CHECK(!framebuffer.update_swap_chain(swap_chain_desc(64, 48)));
 }
 
@@ -519,6 +622,9 @@ TEST(framebuffer_requires_bgfx_backend)
 	wgfx::FrameBuffer swapChainBuffer{
 		wgfx::FrameBuffer::create(swapChain) };
 	CHECK(!swapChainBuffer.valid());
+	CHECK(!swapChainBuffer.is_swap_chain());
+	CHECK_EQ(swapChainBuffer.swap_chain_desc().width, 0u);
+	CHECK(!swapChainBuffer.resize(16, 16));
 	CHECK(!swapChainBuffer.update_swap_chain(swapChain));
 
 	framebuffer.reset();

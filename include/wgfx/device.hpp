@@ -86,6 +86,8 @@ namespace wgfx
 
 		void resize(u32 width, u32 height);
 
+		bool reset();
+
 		void set_vsync(bool enabled);
 
 		u32 frame();

@@ -87,6 +87,10 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		bool is_swap_chain() const;
+		const SwapChainDesc& swap_chain_desc() const;
+		bool resize(u32 width, u32 height);
+
 		bool update_swap_chain(const SwapChainDesc& desc);
 
 		const Texture& color_texture() const;
@@ -101,6 +105,7 @@ namespace wgfx
 		u32 mGeneration{ 0 };
 		Texture mColorTexture;
 		Texture mDepthTexture;
+		SwapChainDesc mSwapChainDesc{};
 		bool mSwapChain{ false };
 	};
 }

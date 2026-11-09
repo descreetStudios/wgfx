@@ -72,6 +72,34 @@ TEST(device_resize_and_vsync_update_state)
 	CHECK_EQ(device->height(), 360u);
 }
 
+TEST(device_reset_reapplies_current_state)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	device->resize(512, 288);
+	REQUIRE(device->reset());
+	CHECK_EQ(device->width(), 512u);
+	CHECK_EQ(device->height(), 288u);
+
+	device->set_vsync(true);
+	REQUIRE(device->reset());
+	CHECK(device->vsync());
+	CHECK_EQ(device->width(), 512u);
+	CHECK_EQ(device->height(), 288u);
+
+	CHECK(device->frame() > 0);
+}
+
+TEST(device_reset_requires_active_device)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	device->shutdown();
+	CHECK(!device->reset());
+}
+
 TEST(device_shutdown_releases_context)
 {
 	auto device = wgfx::Device::create(headless_desc());

@@ -214,13 +214,20 @@ namespace wgfx
 
 		mDesc.width = width;
 		mDesc.height = height;
+		reset();
+	}
 
+	bool Device::reset()
+	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!mValid)
-			return;
+		if (!mValid || mDesc.width == 0 || mDesc.height == 0)
+			return false;
 
 		bgfx::SwapChain swapChain{ make_swap_chain(mDesc) };
 		bgfx::reset(reset_flags(mDesc), mDesc.window.handle ? &swapChain : nullptr);
+		return true;
+#else
+		return false;
 #endif
 	}
 
@@ -230,14 +237,7 @@ namespace wgfx
 			return;
 
 		mDesc.vsync = enabled;
-
-#if defined(WGFX_BACKEND_BGFX)
-		if (!mValid)
-			return;
-
-		bgfx::SwapChain swapChain{ make_swap_chain(mDesc) };
-		bgfx::reset(reset_flags(mDesc), mDesc.window.handle ? &swapChain : nullptr);
-#endif
+		reset();
 	}
 
 	u32 Device::frame()
