@@ -6,6 +6,36 @@
 #include "index_buffer_internal.hpp"
 
 #include <bgfx/bgfx.h>
+
+namespace wgfx
+{
+	namespace
+	{
+		static_assert(static_cast<u16>(BufferFlags::None) == BGFX_BUFFER_NONE,
+			"BufferFlags::None must mirror BGFX_BUFFER_NONE");
+		static_assert(static_cast<u16>(BufferFlags::ComputeRead) == BGFX_BUFFER_COMPUTE_READ,
+			"BufferFlags::ComputeRead must mirror BGFX_BUFFER_COMPUTE_READ");
+		static_assert(static_cast<u16>(BufferFlags::ComputeWrite) == BGFX_BUFFER_COMPUTE_WRITE,
+			"BufferFlags::ComputeWrite must mirror BGFX_BUFFER_COMPUTE_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::ComputeReadWrite) == BGFX_BUFFER_COMPUTE_READ_WRITE,
+			"BufferFlags::ComputeReadWrite must mirror BGFX_BUFFER_COMPUTE_READ_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::AllowResize) == BGFX_BUFFER_ALLOW_RESIZE,
+			"BufferFlags::AllowResize must mirror BGFX_BUFFER_ALLOW_RESIZE");
+		static_assert(static_cast<u16>(BufferFlags::Index32) == BGFX_BUFFER_INDEX32,
+			"BufferFlags::Index32 must mirror BGFX_BUFFER_INDEX32");
+
+		u16 native_flags(IndexType type, BufferFlags flags)
+		{
+			u16 result{ static_cast<u16>(flags) };
+			if (type == IndexType::Uint32)
+				result |= BGFX_BUFFER_INDEX32;
+			else
+				result &= static_cast<u16>(~BGFX_BUFFER_INDEX32);
+
+			return result;
+		}
+	} // anonymous namespace
+}
 #endif
 
 namespace wgfx
@@ -39,7 +69,8 @@ namespace wgfx
 	IndexBuffer IndexBuffer::create(
 		const void* data,
 		u32 size,
-		IndexType type)
+		IndexType type,
+		BufferFlags flags)
 	{
 		IndexBuffer result;
 
@@ -64,10 +95,8 @@ namespace wgfx
 		if (!memory)
 			return result;
 
-		const u16 flags{ static_cast<u16>(type == IndexType::Uint32
-			? BGFX_BUFFER_INDEX32
-			: BGFX_BUFFER_NONE) };
-		const bgfx::IndexBufferHandle handle{ bgfx::createIndexBuffer(memory, flags) };
+		const bgfx::IndexBufferHandle handle{ bgfx::createIndexBuffer(
+			memory, native_flags(type, flags)) };
 		if (!bgfx::isValid(handle))
 			return result;
 
@@ -77,6 +106,7 @@ namespace wgfx
 		(void)data;
 		(void)size;
 		(void)type;
+		(void)flags;
 #endif
 
 		return result;

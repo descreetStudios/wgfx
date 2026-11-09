@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wgfx/buffer_flags.hpp>
 #include <wgfx/vertex_layout.hpp>
 
 namespace wgfx
@@ -24,7 +25,8 @@ namespace wgfx
 		static VertexBuffer create(
 			const VertexLayout& layout,
 			const void* data,
-			u32 size);
+			u32 size,
+			BufferFlags flags = BufferFlags::None);
 
 		bool valid() const;
 		void reset();

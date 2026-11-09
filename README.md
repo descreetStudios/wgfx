@@ -131,6 +131,48 @@ const auto program = wgfx::Program::create(vertex, fragment);
 `Shader::load` returns an invalid shader when the file is missing, empty, or
 the device is not active.
 
+## Compute
+
+Compute shaders are compiled the same way, using `STAGE compute`:
+
+```cmake
+wgfx_add_shader(
+    OUTPUT app_compute
+    SOURCE shaders/cs_main.sc
+    STAGE compute)
+```
+
+Create a compute program from the loaded shader, then bind images and storage
+buffers on a view before dispatching:
+
+```cpp
+const auto compute = wgfx::Shader::load("shaders/windows/cs_main.bin");
+const auto program = wgfx::Program::create_compute(compute);
+
+const wgfx::View view{ wgfx::View::create(0) };
+
+view.set_image(0, image, 0, wgfx::Access::Write);
+view.set_buffer(1, storageBuffer, wgfx::Access::Read);
+
+view.dispatch(program, 8, 8, 1);
+```
+
+`Access` is `Read`, `Write`, or `ReadWrite`. Images are textures created with
+`TextureFlags::ComputeWrite`; storage buffers are vertex, index, or dynamic
+buffers created with the matching `BufferFlags` (`ComputeRead`, `ComputeWrite`,
+or `ComputeReadWrite`). `set_buffer` offsets must be multiples of 256 bytes, and
+`View::WholeBuffer` (the default) binds the entire buffer.
+
+Indirect dispatch reads its group counts from an `IndirectBuffer`. Normally the
+buffer is filled by an earlier GPU pass; dispatch a range of entries with:
+
+```cpp
+view.dispatch(program, indirectBuffer, /* start */ 0, /* count */ 1);
+```
+
+Dispatch and binding calls return `false` when the view, program, or resource is
+invalid, or when the requested range falls outside the buffer.
+
 ## Use it in your project
 
 ```cpp

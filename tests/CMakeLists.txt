@@ -2,7 +2,7 @@ foreach(name test_wgfx test_device test_vertex_layout
         test_vertex_buffer test_index_buffer test_shader
         test_program test_texture test_uniform test_framebuffer
         test_dynamic_vertex_buffer test_dynamic_index_buffer
-        test_indirect_buffer test_occlusion_query test_view)
+        test_indirect_buffer test_occlusion_query test_view test_compute)
     add_executable(${name}
         "${name}.cpp"
         "${WGFX_WCORE_SOURCE_DIR}/src/test.cpp")
@@ -26,6 +26,10 @@ if(WGFX_WITH_BGFX)
             SOURCE "${_shader_source_dir}/fs_test.sc"
             STAGE fragment
             VARYINGDEF "${_shader_source_dir}/varying.def.sc")
+        wgfx_add_shader(
+            OUTPUT _test_cs
+            SOURCE "${_shader_source_dir}/cs_test.sc"
+            STAGE compute)
 
         if(WGFX_SHADER_PLATFORM)
             set(_test_platform "${WGFX_SHADER_PLATFORM}")
@@ -43,7 +47,7 @@ if(WGFX_WITH_BGFX)
         target_compile_definitions(test_shader_toolchain PRIVATE
             WGFX_TEST_SHADER_DIR="${_test_shader_dir}")
         wgfx_target_add_shaders(test_shader_toolchain
-            OUTPUTS ${_test_vs} ${_test_fs})
+            OUTPUTS ${_test_vs} ${_test_fs} ${_test_cs})
 
         add_test(NAME wgfx.test_shader_toolchain COMMAND test_shader_toolchain)
     else()

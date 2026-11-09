@@ -7,6 +7,7 @@
 #include "dynamic_vertex_buffer_internal.hpp"
 #include "framebuffer_internal.hpp"
 #include "index_buffer_internal.hpp"
+#include "indirect_buffer_internal.hpp"
 #include "occlusion_query_internal.hpp"
 #include "program_internal.hpp"
 #include "texture_internal.hpp"
@@ -22,8 +23,9 @@ namespace wgfx
 	namespace
 	{
 		constexpr u8 MaxVertexStreams{ 4 };
-		constexpr u8 MaxTextureStages{ 16 };
+		constexpr u8 MaxStages{ 16 };
 		constexpr u16 ClearFlagsMask{ 0x1fff };
+		constexpr u32 BufferOffsetAlignment{ 256 };
 
 		bool valid_stream(u8 stream)
 		{
@@ -32,7 +34,24 @@ namespace wgfx
 
 		bool valid_stage(u8 stage)
 		{
-			return stage < MaxTextureStages;
+			return stage < MaxStages;
+		}
+
+		bool valid_access(Access access)
+		{
+			return static_cast<u8>(access) < static_cast<u8>(Access::Count);
+		}
+
+		bool valid_buffer_range(u32 offset, u32 size)
+		{
+			return offset % BufferOffsetAlignment == 0 && size != 0;
+		}
+
+		bool valid_image_format(TextureFormat format)
+		{
+			return format == TextureFormat::Count
+				|| static_cast<u16>(format)
+					< static_cast<u16>(TextureFormat::Count);
 		}
 
 		bgfx::ViewMode::Enum to_bgfx(ViewMode mode)
@@ -167,6 +186,17 @@ namespace wgfx
 		WGFX_SAMPLER_MIRROR(UvwBorder, BGFX_SAMPLER_UVW_BORDER);
 
 #undef WGFX_SAMPLER_MIRROR
+
+#define WGFX_ACCESS_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u8>(Access::name) == (bgfxName), \
+			"Access::" #name " must mirror " #bgfxName)
+
+		WGFX_ACCESS_MIRROR(Read, bgfx::Access::Read);
+		WGFX_ACCESS_MIRROR(Write, bgfx::Access::Write);
+		WGFX_ACCESS_MIRROR(ReadWrite, bgfx::Access::ReadWrite);
+		WGFX_ACCESS_MIRROR(Count, bgfx::Access::Count);
+
+#undef WGFX_ACCESS_MIRROR
 
 #define WGFX_DISCARD_MIRROR(name, bgfxName) \
 		static_assert(static_cast<u8>(DiscardFlags::name) == (bgfxName), \
@@ -670,6 +700,309 @@ namespace wgfx
 		(void)stage;
 		(void)sampler;
 		(void)texture;
+		(void)flags;
+		return false;
+#endif
+	}
+
+	bool View::set_image(
+		u8 stage,
+		const Texture& texture,
+		u8 mip,
+		Access access,
+		TextureFormat format) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !texture.valid()
+		|| !valid_access(access)
+		|| !valid_image_format(format))
+		{
+			return false;
+		}
+
+		bgfx::setImage(
+			stage,
+			detail::TextureAccess::native(texture),
+			mip,
+			static_cast<bgfx::Access::Enum>(access),
+			static_cast<bgfx::TextureFormat::Enum>(format));
+		return true;
+#else
+		(void)stage;
+		(void)texture;
+		(void)mip;
+		(void)access;
+		(void)format;
+		return false;
+#endif
+	}
+
+	bool View::set_image(
+		u8 stage,
+		const Texture& texture,
+		u16 firstLayer,
+		u16 numLayers,
+		u8 mip,
+		Access access,
+		TextureFormat format) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !texture.valid()
+		|| numLayers == 0
+		|| !valid_access(access)
+		|| !valid_image_format(format))
+		{
+			return false;
+		}
+
+		bgfx::setImage(
+			stage,
+			detail::TextureAccess::native(texture),
+			firstLayer,
+			numLayers,
+			mip,
+			static_cast<bgfx::Access::Enum>(access),
+			static_cast<bgfx::TextureFormat::Enum>(format));
+		return true;
+#else
+		(void)stage;
+		(void)texture;
+		(void)firstLayer;
+		(void)numLayers;
+		(void)mip;
+		(void)access;
+		(void)format;
+		return false;
+#endif
+	}
+
+	bool View::set_buffer(
+		u8 stage,
+		const VertexBuffer& buffer,
+		Access access,
+		u32 offset,
+		u32 size) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !buffer.valid()
+		|| !valid_access(access)
+		|| !valid_buffer_range(offset, size))
+		{
+			return false;
+		}
+
+		bgfx::setBuffer(
+			stage,
+			detail::VertexBufferAccess::native(buffer),
+			static_cast<bgfx::Access::Enum>(access),
+			offset,
+			size);
+		return true;
+#else
+		(void)stage;
+		(void)buffer;
+		(void)access;
+		(void)offset;
+		(void)size;
+		return false;
+#endif
+	}
+
+	bool View::set_buffer(
+		u8 stage,
+		const IndexBuffer& buffer,
+		Access access,
+		u32 offset,
+		u32 size) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !buffer.valid()
+		|| !valid_access(access)
+		|| !valid_buffer_range(offset, size))
+		{
+			return false;
+		}
+
+		bgfx::setBuffer(
+			stage,
+			detail::IndexBufferAccess::native(buffer),
+			static_cast<bgfx::Access::Enum>(access),
+			offset,
+			size);
+		return true;
+#else
+		(void)stage;
+		(void)buffer;
+		(void)access;
+		(void)offset;
+		(void)size;
+		return false;
+#endif
+	}
+
+	bool View::set_buffer(
+		u8 stage,
+		const DynamicVertexBuffer& buffer,
+		Access access,
+		u32 offset,
+		u32 size) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !buffer.valid()
+		|| !valid_access(access)
+		|| !valid_buffer_range(offset, size))
+		{
+			return false;
+		}
+
+		bgfx::setBuffer(
+			stage,
+			detail::DynamicVertexBufferAccess::native(buffer),
+			static_cast<bgfx::Access::Enum>(access),
+			offset,
+			size);
+		return true;
+#else
+		(void)stage;
+		(void)buffer;
+		(void)access;
+		(void)offset;
+		(void)size;
+		return false;
+#endif
+	}
+
+	bool View::set_buffer(
+		u8 stage,
+		const DynamicIndexBuffer& buffer,
+		Access access,
+		u32 offset,
+		u32 size) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !buffer.valid()
+		|| !valid_access(access)
+		|| !valid_buffer_range(offset, size))
+		{
+			return false;
+		}
+
+		bgfx::setBuffer(
+			stage,
+			detail::DynamicIndexBufferAccess::native(buffer),
+			static_cast<bgfx::Access::Enum>(access),
+			offset,
+			size);
+		return true;
+#else
+		(void)stage;
+		(void)buffer;
+		(void)access;
+		(void)offset;
+		(void)size;
+		return false;
+#endif
+	}
+
+	bool View::set_buffer(
+		u8 stage,
+		const IndirectBuffer& buffer,
+		Access access) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+		|| !valid_stage(stage)
+		|| !buffer.valid()
+		|| !valid_access(access))
+		{
+			return false;
+		}
+
+		bgfx::setBuffer(
+			stage,
+			detail::IndirectBufferAccess::native(buffer),
+			static_cast<bgfx::Access::Enum>(access));
+		return true;
+#else
+		(void)stage;
+		(void)buffer;
+		(void)access;
+		return false;
+#endif
+	}
+
+	bool View::dispatch(
+		const Program& program,
+		u32 numX,
+		u32 numY,
+		u32 numZ,
+		DiscardFlags flags) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !program.valid())
+			return false;
+
+		bgfx::dispatch(
+			mId,
+			detail::ProgramAccess::native(program),
+			numX,
+			numY,
+			numZ,
+			static_cast<u8>(flags));
+		return true;
+#else
+		(void)program;
+		(void)numX;
+		(void)numY;
+		(void)numZ;
+		(void)flags;
+		return false;
+#endif
+	}
+
+	bool View::dispatch(
+		const Program& program,
+		const IndirectBuffer& indirect,
+		u32 start,
+		u32 num,
+		DiscardFlags flags) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		const u32 count{ indirect.count() };
+		if (!valid()
+		|| !program.valid()
+		|| num == 0
+		|| start > count
+		|| num > count - start)
+		{
+			return false;
+		}
+
+		bgfx::dispatch(
+			mId,
+			detail::ProgramAccess::native(program),
+			detail::IndirectBufferAccess::native(indirect),
+			start,
+			num,
+			static_cast<u8>(flags));
+		return true;
+#else
+		(void)program;
+		(void)indirect;
+		(void)start;
+		(void)num;
 		(void)flags;
 		return false;
 #endif

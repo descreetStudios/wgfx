@@ -7,6 +7,25 @@
 #include "vertex_layout_internal.hpp"
 
 #include <bgfx/bgfx.h>
+
+namespace wgfx
+{
+	namespace
+	{
+		static_assert(static_cast<u16>(BufferFlags::None) == BGFX_BUFFER_NONE,
+			"BufferFlags::None must mirror BGFX_BUFFER_NONE");
+		static_assert(static_cast<u16>(BufferFlags::ComputeRead) == BGFX_BUFFER_COMPUTE_READ,
+			"BufferFlags::ComputeRead must mirror BGFX_BUFFER_COMPUTE_READ");
+		static_assert(static_cast<u16>(BufferFlags::ComputeWrite) == BGFX_BUFFER_COMPUTE_WRITE,
+			"BufferFlags::ComputeWrite must mirror BGFX_BUFFER_COMPUTE_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::ComputeReadWrite) == BGFX_BUFFER_COMPUTE_READ_WRITE,
+			"BufferFlags::ComputeReadWrite must mirror BGFX_BUFFER_COMPUTE_READ_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::AllowResize) == BGFX_BUFFER_ALLOW_RESIZE,
+			"BufferFlags::AllowResize must mirror BGFX_BUFFER_ALLOW_RESIZE");
+		static_assert(static_cast<u16>(BufferFlags::Index32) == BGFX_BUFFER_INDEX32,
+			"BufferFlags::Index32 must mirror BGFX_BUFFER_INDEX32");
+	} // anonymous namespace
+}
 #endif
 
 namespace wgfx
@@ -40,7 +59,8 @@ namespace wgfx
 	VertexBuffer VertexBuffer::create(
 		const VertexLayout& layout,
 		const void* data,
-		u32 size)
+		u32 size,
+		BufferFlags flags)
 	{
 		VertexBuffer result;
 
@@ -57,7 +77,8 @@ namespace wgfx
 			return result;
 
 		const bgfx::VertexBufferHandle handle{ bgfx::createVertexBuffer(
-			memory, detail::VertexLayoutAccess::native(layout)) };
+			memory, detail::VertexLayoutAccess::native(layout),
+			static_cast<u16>(flags)) };
 		if (!bgfx::isValid(handle))
 			return result;
 
@@ -67,6 +88,7 @@ namespace wgfx
 		(void)layout;
 		(void)data;
 		(void)size;
+		(void)flags;
 #endif
 
 		return result;

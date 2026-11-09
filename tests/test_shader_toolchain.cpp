@@ -59,6 +59,41 @@ TEST(toolchain_reports_reflected_uniforms)
 	CHECK(info.count == 1);
 }
 
+TEST(toolchain_dispatches_compiled_compute_shader)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	auto compute = wgfx::Shader::load(shader_path("cs_test.bin"));
+	REQUIRE(compute.valid());
+
+	const auto program = wgfx::Program::create_compute(compute);
+	REQUIRE(program.valid());
+
+	REQUIRE(compute.uniforms() == 1);
+	wgfx::ShaderUniformInfo info{};
+	CHECK(compute.uniforms(&info, 1) == 1);
+	CHECK(std::strcmp(info.name, "u_color") == 0);
+	CHECK(info.type == wgfx::UniformType::Vec4);
+
+	wgfx::TextureDesc desc;
+	desc.width = 8;
+	desc.height = 8;
+	desc.format = wgfx::TextureFormat::RGBA8;
+	desc.flags = wgfx::TextureFlags::ComputeWrite;
+	const wgfx::Texture image{ wgfx::Texture::create(desc) };
+	const wgfx::IndirectBuffer indirect{ wgfx::IndirectBuffer::create(1) };
+	REQUIRE(image.valid());
+	REQUIRE(indirect.valid());
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	CHECK(view.set_image(0, image, 0, wgfx::Access::Write));
+	CHECK(view.dispatch(program, 1, 1, 1));
+	CHECK(view.dispatch(program, indirect));
+}
+
 TEST(toolchain_missing_shader_file_fails)
 {
 	const auto shader = wgfx::Shader::load(shader_path("does_not_exist.bin"));

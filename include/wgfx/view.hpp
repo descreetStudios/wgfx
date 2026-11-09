@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wgfx/access.hpp>
 #include <wgfx/render_state.hpp>
 #include <wgfx/texture.hpp>
 
@@ -9,6 +10,7 @@ namespace wgfx
 	class DynamicVertexBuffer;
 	class FrameBuffer;
 	class IndexBuffer;
+	class IndirectBuffer;
 	class OcclusionQuery;
 	class Program;
 	class Uniform;
@@ -71,6 +73,7 @@ namespace wgfx
 	{
 	public:
 		static constexpr u16 InvalidId{ 0xffff };
+		static constexpr u32 WholeBuffer{ 0xffffffffu };
 
 		View() = default;
 
@@ -121,6 +124,54 @@ namespace wgfx
 			const Uniform& sampler,
 			const Texture& texture,
 			SamplerFlags flags) const;
+
+		bool set_image(u8 stage,
+			const Texture& texture,
+			u8 mip,
+			Access access,
+			TextureFormat format = TextureFormat::Count) const;
+		bool set_image(u8 stage,
+			const Texture& texture,
+			u16 firstLayer,
+			u16 numLayers,
+			u8 mip,
+			Access access,
+			TextureFormat format = TextureFormat::Count) const;
+
+		bool set_buffer(u8 stage,
+			const VertexBuffer& buffer,
+			Access access,
+			u32 offset = 0,
+			u32 size = WholeBuffer) const;
+		bool set_buffer(u8 stage,
+			const IndexBuffer& buffer,
+			Access access,
+			u32 offset = 0,
+			u32 size = WholeBuffer) const;
+		bool set_buffer(u8 stage,
+			const DynamicVertexBuffer& buffer,
+			Access access,
+			u32 offset = 0,
+			u32 size = WholeBuffer) const;
+		bool set_buffer(u8 stage,
+			const DynamicIndexBuffer& buffer,
+			Access access,
+			u32 offset = 0,
+			u32 size = WholeBuffer) const;
+		bool set_buffer(u8 stage,
+			const IndirectBuffer& buffer,
+			Access access) const;
+
+		bool dispatch(const Program& program,
+			u32 numX = 1,
+			u32 numY = 1,
+			u32 numZ = 1,
+			DiscardFlags flags = DiscardFlags::All) const;
+		bool dispatch(const Program& program,
+			const IndirectBuffer& indirect,
+			u32 start = 0,
+			u32 num = 1,
+			DiscardFlags flags = DiscardFlags::All) const;
 
 		bool submit(const Program& program,
 			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;

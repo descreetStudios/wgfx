@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wgfx/buffer_flags.hpp>
 #include <wcore/types.hpp>
 
 namespace wgfx
@@ -30,7 +31,8 @@ namespace wgfx
 		static IndexBuffer create(
 			const void* data,
 			u32 size,
-			IndexType type = IndexType::Uint16);
+			IndexType type = IndexType::Uint16,
+			BufferFlags flags = BufferFlags::None);
 
 		bool valid() const;
 		void reset();

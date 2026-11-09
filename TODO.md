@@ -23,5 +23,5 @@
 ## Rendering
 - [x] Views, render state and draw submission
 - [x] Shader pipeline and toolchain
-- [ ] Compute dispatch, images and indirect dispatch
+- [x] Compute dispatch, images and indirect dispatch
 - [ ] Resize/reset and multi-window frame buffers
