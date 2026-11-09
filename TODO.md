@@ -27,5 +27,5 @@
 - [x] Resize/reset and multi-window frame buffers
 - [x] Instancing and indirect draws
 - [x] Transient buffers
-- [ ] Advanced view/draw state
+- [x] Advanced view/draw state
 - [ ] Diagnostics and debugging

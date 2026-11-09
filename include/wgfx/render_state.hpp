@@ -188,6 +188,55 @@ namespace wgfx
 		u32 rgba{ 0 };
 	};
 
+	// Stencil comparison functions
+	// matching bgfx's BGFX_STENCIL_TEST_* values.
+	enum class StencilTest : u32
+	{
+		None = 0x00000000,
+		Less = 0x00010000,
+		Lequal = 0x00020000,
+		Equal = 0x00030000,
+		Gequal = 0x00040000,
+		Greater = 0x00050000,
+		Notequal = 0x00060000,
+		Never = 0x00070000,
+		Always = 0x00080000,
+	};
+
+	enum class StencilOp : u32
+	{
+		Zero,
+		Keep,
+		Replace,
+		Incr,
+		IncrSat,
+		Decr,
+		DecrSat,
+		Invert,
+	};
+
+	constexpr u32 stencil_test(
+		StencilTest test,
+		u8 ref = 0,
+		u8 readMask = 0xff) noexcept
+	{
+		return static_cast<u32>(test)
+			| static_cast<u32>(ref)
+			| (static_cast<u32>(readMask) << 8);
+	}
+
+	constexpr u32 stencil_ops(
+		StencilOp fail,
+		StencilOp depthFail,
+		StencilOp pass) noexcept
+	{
+		return (static_cast<u32>(fail) << 20)
+			| (static_cast<u32>(depthFail) << 24)
+			| (static_cast<u32>(pass) << 28);
+	}
+
+	inline constexpr u32 StencilNone{ stencil_test(StencilTest::None) };
+
 	// Bit flags matching bgfx's BGFX_SAMPLER_* values.
 	enum class SamplerFlags : u32
 	{

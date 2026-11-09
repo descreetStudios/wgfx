@@ -61,6 +61,7 @@ namespace wgfx
 		bool swapChain{ false };
 		bool drawIndirect{ false };
 		bool drawIndirectCount{ false };
+		bool variableRateShading{ false };
 	};
 
 	class Device

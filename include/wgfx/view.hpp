@@ -29,6 +29,20 @@ namespace wgfx
 		Count,
 	};
 
+	// Shading rates matching bgfx's ShadingRate values.
+	enum class ShadingRate : u8
+	{
+		Rate1x1,
+		Rate1x2,
+		Rate2x1,
+		Rate2x2,
+		Rate2x4,
+		Rate4x2,
+		Rate4x4,
+
+		Count,
+	};
+
 	// Bit flags matching bgfx's BGFX_CLEAR_* values.
 	enum class ClearFlags : u16
 	{
@@ -100,11 +114,28 @@ namespace wgfx
 		bool set_transform(const void* view, const void* projection) const;
 		bool set_mode(ViewMode mode) const;
 		bool set_name(const char* name) const;
+		bool set_depth_bias(
+			i32 constant = 0,
+			float slopeScale = 0.0f,
+			float clamp = 0.0f) const;
+		bool set_view_sample_mask(u32 mask = 0xffffffffu) const;
+		bool set_shading_rate(ShadingRate rate = ShadingRate::Rate1x1) const;
+		bool set_view_order(u16 count = 0xffff, const u16* order = nullptr) const;
 		bool reset_settings() const;
 		bool touch() const;
 
 		bool set_state(const RenderState& state) const;
 		bool set_state(RenderStateFlags flags, u32 rgba = 0) const;
+		bool set_vertex_count(u32 count) const;
+		bool set_model_transform(const void* matrix, u16 count = 1) const;
+		bool set_draw_scissor(u16 x, u16 y, u16 width, u16 height) const;
+		bool set_depth_control(
+			i32 constant = 0,
+			float slopeScale = 0.0f,
+			float clamp = 0.0f,
+			bool depthClamp = false) const;
+		bool set_sample_mask(u32 mask = 0xffffffffu) const;
+		bool set_stencil(u32 front, u32 back = StencilNone) const;
 
 		bool set_vertex_buffer(u8 stream, const VertexBuffer& buffer) const;
 		bool set_vertex_buffer(u8 stream, const VertexBuffer& buffer,

@@ -68,6 +68,12 @@ namespace wgfx
 			return caps && 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT_COUNT);
 		}
 
+		bool supports_variable_rate_shading()
+		{
+			const bgfx::Caps* caps{ bgfx::getCaps() };
+			return caps && 0 != (caps->supported & BGFX_CAPS_VARIABLE_RATE_SHADING);
+		}
+
 		bgfx::ViewMode::Enum to_bgfx(ViewMode mode)
 		{
 			return static_cast<bgfx::ViewMode::Enum>(mode);
@@ -252,6 +258,83 @@ namespace wgfx
 		WGFX_CLEAR_MIRROR(DiscardMask, BGFX_CLEAR_DISCARD_MASK);
 
 #undef WGFX_CLEAR_MIRROR
+
+#define WGFX_STENCIL_TEST_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u32>(StencilTest::name) == (bgfxName), \
+			"StencilTest::" #name " must mirror " #bgfxName)
+
+		WGFX_STENCIL_TEST_MIRROR(None, 0u);
+		WGFX_STENCIL_TEST_MIRROR(Less, BGFX_STENCIL_TEST_LESS);
+		WGFX_STENCIL_TEST_MIRROR(Lequal, BGFX_STENCIL_TEST_LEQUAL);
+		WGFX_STENCIL_TEST_MIRROR(Equal, BGFX_STENCIL_TEST_EQUAL);
+		WGFX_STENCIL_TEST_MIRROR(Gequal, BGFX_STENCIL_TEST_GEQUAL);
+		WGFX_STENCIL_TEST_MIRROR(Greater, BGFX_STENCIL_TEST_GREATER);
+		WGFX_STENCIL_TEST_MIRROR(Notequal, BGFX_STENCIL_TEST_NOTEQUAL);
+		WGFX_STENCIL_TEST_MIRROR(Never, BGFX_STENCIL_TEST_NEVER);
+		WGFX_STENCIL_TEST_MIRROR(Always, BGFX_STENCIL_TEST_ALWAYS);
+
+#undef WGFX_STENCIL_TEST_MIRROR
+
+#define WGFX_STENCIL_OP_MIRROR(name, failS, failZ, passZ) \
+		static_assert(static_cast<u32>(StencilOp::name) << 20 == (failS), \
+			"StencilOp::" #name " must mirror " #failS); \
+		static_assert(static_cast<u32>(StencilOp::name) << 24 == (failZ), \
+			"StencilOp::" #name " must mirror " #failZ); \
+		static_assert(static_cast<u32>(StencilOp::name) << 28 == (passZ), \
+			"StencilOp::" #name " must mirror " #passZ)
+
+		WGFX_STENCIL_OP_MIRROR(Zero,
+			BGFX_STENCIL_OP_FAIL_S_ZERO,
+			BGFX_STENCIL_OP_FAIL_Z_ZERO,
+			BGFX_STENCIL_OP_PASS_Z_ZERO);
+		WGFX_STENCIL_OP_MIRROR(Keep,
+			BGFX_STENCIL_OP_FAIL_S_KEEP,
+			BGFX_STENCIL_OP_FAIL_Z_KEEP,
+			BGFX_STENCIL_OP_PASS_Z_KEEP);
+		WGFX_STENCIL_OP_MIRROR(Replace,
+			BGFX_STENCIL_OP_FAIL_S_REPLACE,
+			BGFX_STENCIL_OP_FAIL_Z_REPLACE,
+			BGFX_STENCIL_OP_PASS_Z_REPLACE);
+		WGFX_STENCIL_OP_MIRROR(Incr,
+			BGFX_STENCIL_OP_FAIL_S_INCR,
+			BGFX_STENCIL_OP_FAIL_Z_INCR,
+			BGFX_STENCIL_OP_PASS_Z_INCR);
+		WGFX_STENCIL_OP_MIRROR(IncrSat,
+			BGFX_STENCIL_OP_FAIL_S_INCRSAT,
+			BGFX_STENCIL_OP_FAIL_Z_INCRSAT,
+			BGFX_STENCIL_OP_PASS_Z_INCRSAT);
+		WGFX_STENCIL_OP_MIRROR(Decr,
+			BGFX_STENCIL_OP_FAIL_S_DECR,
+			BGFX_STENCIL_OP_FAIL_Z_DECR,
+			BGFX_STENCIL_OP_PASS_Z_DECR);
+		WGFX_STENCIL_OP_MIRROR(DecrSat,
+			BGFX_STENCIL_OP_FAIL_S_DECRSAT,
+			BGFX_STENCIL_OP_FAIL_Z_DECRSAT,
+			BGFX_STENCIL_OP_PASS_Z_DECRSAT);
+		WGFX_STENCIL_OP_MIRROR(Invert,
+			BGFX_STENCIL_OP_FAIL_S_INVERT,
+			BGFX_STENCIL_OP_FAIL_Z_INVERT,
+			BGFX_STENCIL_OP_PASS_Z_INVERT);
+
+#undef WGFX_STENCIL_OP_MIRROR
+
+		static_assert(StencilNone == BGFX_STENCIL_NONE,
+			"StencilNone must mirror BGFX_STENCIL_NONE");
+
+#define WGFX_SHADING_RATE_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u8>(ShadingRate::name) == (bgfxName), \
+			"ShadingRate::" #name " must mirror " #bgfxName)
+
+		WGFX_SHADING_RATE_MIRROR(Rate1x1, bgfx::ShadingRate::Rate1x1);
+		WGFX_SHADING_RATE_MIRROR(Rate1x2, bgfx::ShadingRate::Rate1x2);
+		WGFX_SHADING_RATE_MIRROR(Rate2x1, bgfx::ShadingRate::Rate2x1);
+		WGFX_SHADING_RATE_MIRROR(Rate2x2, bgfx::ShadingRate::Rate2x2);
+		WGFX_SHADING_RATE_MIRROR(Rate2x4, bgfx::ShadingRate::Rate2x4);
+		WGFX_SHADING_RATE_MIRROR(Rate4x2, bgfx::ShadingRate::Rate4x2);
+		WGFX_SHADING_RATE_MIRROR(Rate4x4, bgfx::ShadingRate::Rate4x4);
+		WGFX_SHADING_RATE_MIRROR(Count, bgfx::ShadingRate::Count);
+
+#undef WGFX_SHADING_RATE_MIRROR
 
 		static_assert(static_cast<u8>(ViewMode::Default) == bgfx::ViewMode::Default,
 			"ViewMode::Default must mirror bgfx::ViewMode::Default");
@@ -447,6 +530,88 @@ namespace wgfx
 #endif
 	}
 
+	bool View::set_depth_bias(i32 constant, float slopeScale, float clamp) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setViewDepthBias(mId, constant, slopeScale, clamp);
+		return true;
+#else
+		(void)constant;
+		(void)slopeScale;
+		(void)clamp;
+		return false;
+#endif
+	}
+
+	bool View::set_view_sample_mask(u32 mask) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setViewSampleMask(mId, mask);
+		return true;
+#else
+		(void)mask;
+		return false;
+#endif
+	}
+
+	bool View::set_shading_rate(ShadingRate rate) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+			|| static_cast<u8>(rate) >= static_cast<u8>(ShadingRate::Count)
+			|| !supports_variable_rate_shading())
+		{
+			return false;
+		}
+
+		bgfx::setViewShadingRate(
+			mId,
+			static_cast<bgfx::ShadingRate::Enum>(rate));
+		return true;
+#else
+		(void)rate;
+		return false;
+#endif
+	}
+
+	bool View::set_view_order(u16 count, const u16* order) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || count == 0)
+			return false;
+
+		if (order)
+		{
+			const bgfx::Caps* caps{ bgfx::getCaps() };
+			if (!caps)
+				return false;
+
+			const u32 maxViews{ caps->limits.maxViews };
+			const u32 remaining{ maxViews > mId ? maxViews - mId : 0 };
+			const u32 num{ count < remaining ? count : remaining };
+
+			for (u32 index = 0; index < num; ++index)
+			{
+				if (order[index] >= maxViews)
+					return false;
+			}
+		}
+
+		bgfx::setViewOrder(mId, count, order);
+		return true;
+#else
+		(void)count;
+		(void)order;
+		return false;
+#endif
+	}
+
 	bool View::reset_settings() const
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -489,6 +654,102 @@ namespace wgfx
 #else
 		(void)flags;
 		(void)rgba;
+		return false;
+#endif
+	}
+
+	bool View::set_vertex_count(u32 count) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setVertexCount(count);
+		return true;
+#else
+		(void)count;
+		return false;
+#endif
+	}
+
+	bool View::set_model_transform(const void* matrix, u16 count) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !matrix || count == 0)
+			return false;
+
+		bgfx::setTransform(matrix, count);
+		return true;
+#else
+		(void)matrix;
+		(void)count;
+		return false;
+#endif
+	}
+
+	bool View::set_draw_scissor(u16 x, u16 y, u16 width, u16 height) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setScissor(x, y, width, height);
+		return true;
+#else
+		(void)x;
+		(void)y;
+		(void)width;
+		(void)height;
+		return false;
+#endif
+	}
+
+	bool View::set_depth_control(
+		i32 constant,
+		float slopeScale,
+		float clamp,
+		bool depthClamp) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setDepthControl(constant, slopeScale, clamp, depthClamp);
+		return true;
+#else
+		(void)constant;
+		(void)slopeScale;
+		(void)clamp;
+		(void)depthClamp;
+		return false;
+#endif
+	}
+
+	bool View::set_sample_mask(u32 mask) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setSampleMask(mask);
+		return true;
+#else
+		(void)mask;
+		return false;
+#endif
+	}
+
+	bool View::set_stencil(u32 front, u32 back) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setStencil(front, back);
+		return true;
+#else
+		(void)front;
+		(void)back;
 		return false;
 #endif
 	}

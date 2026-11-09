@@ -143,6 +143,8 @@ namespace wgfx
 			mCaps.drawIndirect = 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
 			mCaps.drawIndirectCount =
 				0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT_COUNT);
+			mCaps.variableRateShading =
+				0 != (caps->supported & BGFX_CAPS_VARIABLE_RATE_SHADING);
 		}
 
 		mRendererName = bgfx::getRendererName(bgfx::getRendererType());

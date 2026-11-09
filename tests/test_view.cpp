@@ -80,6 +80,16 @@ TEST(render_state_composes)
 		== wgfx::DiscardFlags::Bindings);
 	CHECK((discard & wgfx::DiscardFlags::Transform)
 		== wgfx::DiscardFlags::None);
+
+	CHECK(wgfx::StencilNone == 0x0000ff00u);
+	CHECK(wgfx::stencil_test(wgfx::StencilTest::None) == wgfx::StencilNone);
+	CHECK(wgfx::stencil_test(wgfx::StencilTest::Equal, 0x2a, 0x0f)
+		== (0x00030000u | 0x0000002au | 0x00000f00u));
+	CHECK(wgfx::stencil_ops(
+		wgfx::StencilOp::Keep,
+		wgfx::StencilOp::Decr,
+		wgfx::StencilOp::Replace)
+		== (0x00100000u | 0x05000000u | 0x20000000u));
 }
 
 #if defined(WGFX_BACKEND_BGFX)
@@ -247,6 +257,75 @@ TEST(view_rejects_invalid_input)
 	CHECK(!invalid.reset_settings());
 	CHECK(!invalid.discard());
 	CHECK(!invalid.set_rect(0, 0, 16, 16));
+}
+
+TEST(view_configures_advanced_state)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	CHECK(view.set_depth_bias(-1, 1.5f, 0.01f));
+	CHECK(view.set_view_sample_mask(0xffffffffu));
+	CHECK(view.set_shading_rate(wgfx::ShadingRate::Rate1x1)
+		== device->caps().variableRateShading);
+	if (device->caps().variableRateShading)
+		CHECK(view.set_shading_rate(wgfx::ShadingRate::Rate2x2));
+
+	const u16 order[]{ 1, 0 };
+	CHECK(view.set_view_order(2, order));
+	CHECK(view.set_view_order(2));
+	CHECK(view.set_view_order());
+
+	CHECK(view.set_vertex_count(3));
+	CHECK(view.set_model_transform(IdentityMatrix));
+	CHECK(view.set_draw_scissor(0, 0, 160, 90));
+	CHECK(view.set_depth_control(-1, 1.0f, 0.5f, true));
+	CHECK(view.set_sample_mask(0x01));
+	CHECK(view.set_stencil(
+		wgfx::stencil_test(wgfx::StencilTest::Always, 1)
+		| wgfx::stencil_ops(
+			wgfx::StencilOp::Keep,
+			wgfx::StencilOp::Keep,
+			wgfx::StencilOp::Replace)));
+}
+
+TEST(view_rejects_invalid_advanced_state)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	CHECK(!view.set_shading_rate(
+		static_cast<wgfx::ShadingRate>(wgfx::ShadingRate::Count)));
+	CHECK(!view.set_model_transform(nullptr));
+	CHECK(!view.set_model_transform(IdentityMatrix, 0));
+	CHECK(!view.set_view_order(0, nullptr));
+
+	const u16 badOrder[]
+	{
+		static_cast<u16>(device->caps().maxViews),
+	};
+	CHECK(!view.set_view_order(1, badOrder));
+
+	if (!device->caps().variableRateShading)
+		CHECK(!view.set_shading_rate(wgfx::ShadingRate::Rate1x1));
+
+	const wgfx::View invalid;
+	CHECK(!invalid.set_depth_bias());
+	CHECK(!invalid.set_view_sample_mask());
+	CHECK(!invalid.set_shading_rate());
+	CHECK(!invalid.set_view_order(1, badOrder));
+	CHECK(!invalid.set_vertex_count(1));
+	CHECK(!invalid.set_model_transform(IdentityMatrix));
+	CHECK(!invalid.set_draw_scissor(0, 0, 1, 1));
+	CHECK(!invalid.set_depth_control());
+	CHECK(!invalid.set_sample_mask());
+	CHECK(!invalid.set_stencil(wgfx::StencilNone));
 }
 
 TEST(view_binds_and_submits_draw)
@@ -510,6 +589,16 @@ TEST(view_requires_bgfx_backend)
 	CHECK(!view.reset_settings());
 	CHECK(!view.touch());
 	CHECK(!view.set_state(wgfx::RenderState{}));
+	CHECK(!view.set_depth_bias());
+	CHECK(!view.set_view_sample_mask());
+	CHECK(!view.set_shading_rate());
+	CHECK(!view.set_view_order());
+	CHECK(!view.set_vertex_count(1));
+	CHECK(!view.set_model_transform(IdentityMatrix));
+	CHECK(!view.set_draw_scissor(0, 0, 1, 1));
+	CHECK(!view.set_depth_control());
+	CHECK(!view.set_sample_mask());
+	CHECK(!view.set_stencil(wgfx::StencilNone));
 	CHECK(!view.set_instance_count(1));
 	CHECK(!view.set_instance_data_buffer(wgfx::VertexBuffer{}, 0, 1));
 	CHECK(!view.set_instance_data_buffer(wgfx::DynamicVertexBuffer{}, 0, 1));
