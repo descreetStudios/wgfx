@@ -25,9 +25,7 @@
 - [x] Shader pipeline and toolchain
 - [x] Compute dispatch, images and indirect dispatch
 - [x] Resize/reset and multi-window frame buffers
-
-## Next milestones
-- [ ] Instancing and indirect draws
+- [x] Instancing and indirect draws
 - [ ] Transient buffers
 - [ ] Advanced view/draw state
 - [ ] Diagnostics and debugging

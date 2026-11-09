@@ -37,6 +37,10 @@ namespace wgfx
 		bool valid() const;
 		void reset();
 
+		u32 count() const;
+		bool index_32() const;
+		bool has_flag(BufferFlags flag) const;
+
 	private:
 		friend struct detail::IndexBufferAccess;
 
@@ -44,5 +48,8 @@ namespace wgfx
 
 		u16 mHandle{ InvalidHandle };
 		u32 mGeneration{ 0 };
+		u32 mCount{ 0 };
+		BufferFlags mFlags{ BufferFlags::None };
+		bool mIndex32{ false };
 	};
 }

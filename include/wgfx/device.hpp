@@ -56,6 +56,8 @@ namespace wgfx
 		u32 maxViews{ 0 };
 		u32 maxFrameBuffers{ 0 };
 		bool swapChain{ false };
+		bool drawIndirect{ false };
+		bool drawIndirectCount{ false };
 	};
 
 	class Device

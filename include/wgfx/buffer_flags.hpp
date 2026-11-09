@@ -10,6 +10,7 @@ namespace wgfx
 		ComputeRead = 0x0100,
 		ComputeWrite = 0x0200,
 		ComputeReadWrite = 0x0300,
+		DrawIndirect = 0x0400,
 		AllowResize = 0x0800,
 		Index32 = 0x1000,
 	};

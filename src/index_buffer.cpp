@@ -19,6 +19,8 @@ namespace wgfx
 			"BufferFlags::ComputeWrite must mirror BGFX_BUFFER_COMPUTE_WRITE");
 		static_assert(static_cast<u16>(BufferFlags::ComputeReadWrite) == BGFX_BUFFER_COMPUTE_READ_WRITE,
 			"BufferFlags::ComputeReadWrite must mirror BGFX_BUFFER_COMPUTE_READ_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::DrawIndirect) == BGFX_BUFFER_DRAW_INDIRECT,
+			"BufferFlags::DrawIndirect must mirror BGFX_BUFFER_DRAW_INDIRECT");
 		static_assert(static_cast<u16>(BufferFlags::AllowResize) == BGFX_BUFFER_ALLOW_RESIZE,
 			"BufferFlags::AllowResize must mirror BGFX_BUFFER_ALLOW_RESIZE");
 		static_assert(static_cast<u16>(BufferFlags::Index32) == BGFX_BUFFER_INDEX32,
@@ -43,9 +45,15 @@ namespace wgfx
 	IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
 		: mHandle{ other.mHandle }
 		, mGeneration{ other.mGeneration }
+		, mCount{ other.mCount }
+		, mFlags{ other.mFlags }
+		, mIndex32{ other.mIndex32 }
 	{
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mCount = 0;
+		other.mFlags = BufferFlags::None;
+		other.mIndex32 = false;
 	}
 
 	IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept
@@ -56,8 +64,14 @@ namespace wgfx
 		reset();
 		mHandle = other.mHandle;
 		mGeneration = other.mGeneration;
+		mCount = other.mCount;
+		mFlags = other.mFlags;
+		mIndex32 = other.mIndex32;
 		other.mHandle = InvalidHandle;
 		other.mGeneration = 0;
+		other.mCount = 0;
+		other.mFlags = BufferFlags::None;
+		other.mIndex32 = false;
 		return *this;
 	}
 
@@ -102,6 +116,9 @@ namespace wgfx
 
 		result.mHandle = handle.idx;
 		result.mGeneration = generation;
+		result.mCount = size / indexSize;
+		result.mFlags = flags;
+		result.mIndex32 = type == IndexType::Uint32;
 #else
 		(void)data;
 		(void)size;
@@ -132,5 +149,27 @@ namespace wgfx
 
 		mHandle = InvalidHandle;
 		mGeneration = 0;
+		mCount = 0;
+		mFlags = BufferFlags::None;
+		mIndex32 = false;
+	}
+
+	u32 IndexBuffer::count() const
+	{
+		return valid() ? mCount : 0;
+	}
+
+	bool IndexBuffer::index_32() const
+	{
+		return valid() && mIndex32;
+	}
+
+	bool IndexBuffer::has_flag(BufferFlags flag) const
+	{
+		if (!valid())
+			return false;
+
+		return (static_cast<u16>(mFlags) & static_cast<u16>(flag))
+			== static_cast<u16>(flag);
 	}
 }

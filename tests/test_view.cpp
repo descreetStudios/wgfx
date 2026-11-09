@@ -339,6 +339,134 @@ TEST(view_submits_occlusion_query)
 	CHECK(view.submit(program, query));
 }
 
+TEST(view_uses_instancing)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	const wgfx::VertexLayout layout{ position_layout() };
+	const wgfx::VertexBuffer vertexBuffer{
+		wgfx::VertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+	const wgfx::DynamicVertexBuffer dynamicVertexBuffer{
+		wgfx::DynamicVertexBuffer::create(layout, Triangle, sizeof(Triangle)) };
+
+	REQUIRE(vertexBuffer.valid());
+	REQUIRE(dynamicVertexBuffer.valid());
+
+	CHECK(view.set_instance_count(0));
+	CHECK(view.set_instance_count(8));
+	CHECK(view.set_instance_data_buffer(vertexBuffer, 0, 3));
+	CHECK(view.set_instance_data_buffer(dynamicVertexBuffer, 1, 2));
+
+	CHECK(!view.set_instance_data_buffer(wgfx::VertexBuffer{}, 0, 1));
+	CHECK(!view.set_instance_data_buffer(wgfx::DynamicVertexBuffer{}, 0, 1));
+	CHECK(!view.set_instance_data_buffer(vertexBuffer, 0, 0));
+	CHECK(!view.set_instance_data_buffer(dynamicVertexBuffer, 0, 0));
+
+	const wgfx::View invalid;
+	CHECK(!invalid.set_instance_count(1));
+	CHECK(!invalid.set_instance_data_buffer(vertexBuffer, 0, 1));
+	CHECK(!invalid.set_instance_data_buffer(dynamicVertexBuffer, 0, 1));
+}
+
+TEST(view_submits_indirect_draw)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().drawIndirect);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	const wgfx::IndirectBuffer indirect{ wgfx::IndirectBuffer::create(2) };
+	const wgfx::Shader vertex{
+		wgfx::Shader::create(ViewVertexShader, sizeof(ViewVertexShader)) };
+	const wgfx::Shader fragment{
+		wgfx::Shader::create(ViewFragmentShader, sizeof(ViewFragmentShader)) };
+	const wgfx::Program program{ wgfx::Program::create(vertex, fragment) };
+
+	REQUIRE(indirect.valid());
+	REQUIRE(program.valid());
+
+	CHECK(view.submit(program, indirect));
+	CHECK(view.submit(program, indirect, 1, 1));
+	CHECK(view.submit(program, indirect, 0, 2, 3, wgfx::DiscardFlags::None));
+
+	CHECK(!view.submit(program, indirect, 2, 1));
+	CHECK(!view.submit(program, indirect, 0, 0));
+	CHECK(!view.submit(program, indirect, 3, 0));
+	CHECK(!view.submit(wgfx::Program{}, indirect));
+	CHECK(!view.submit(program, wgfx::IndirectBuffer{}));
+
+	const wgfx::View invalid;
+	CHECK(!invalid.submit(program, indirect));
+}
+
+TEST(view_submits_indirect_count_draw)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+	REQUIRE(device->caps().drawIndirect);
+	REQUIRE(device->caps().drawIndirectCount);
+
+	const wgfx::View view{ wgfx::View::create(0) };
+	REQUIRE(view.valid());
+
+	const wgfx::IndirectBuffer indirect{ wgfx::IndirectBuffer::create(2) };
+	const u32 counts[]{ 1 };
+	const wgfx::IndexBuffer numBuffer{
+		wgfx::IndexBuffer::create(
+			counts,
+			sizeof(counts),
+			wgfx::IndexType::Uint32,
+			wgfx::BufferFlags::DrawIndirect) };
+	const wgfx::IndexBuffer plainBuffer{
+		wgfx::IndexBuffer::create(
+			counts,
+			sizeof(counts),
+			wgfx::IndexType::Uint32) };
+	const wgfx::IndexBuffer sixteenBit{
+		wgfx::IndexBuffer::create(
+			Indices,
+			sizeof(Indices),
+			wgfx::IndexType::Uint16,
+			wgfx::BufferFlags::DrawIndirect) };
+
+	const wgfx::Shader vertex{
+		wgfx::Shader::create(ViewVertexShader, sizeof(ViewVertexShader)) };
+	const wgfx::Shader fragment{
+		wgfx::Shader::create(ViewFragmentShader, sizeof(ViewFragmentShader)) };
+	const wgfx::Program program{ wgfx::Program::create(vertex, fragment) };
+
+	REQUIRE(indirect.valid());
+	REQUIRE(numBuffer.valid());
+	REQUIRE(plainBuffer.valid());
+	REQUIRE(sixteenBit.valid());
+	REQUIRE(program.valid());
+
+	CHECK_EQ(numBuffer.count(), 1u);
+	CHECK(numBuffer.index_32());
+	CHECK(numBuffer.has_flag(wgfx::BufferFlags::DrawIndirect));
+
+	CHECK(view.submit(program, indirect, 0, numBuffer));
+	CHECK(view.submit(program, indirect, 1, numBuffer, 0, 4));
+	CHECK(view.submit(program, indirect, 0, numBuffer, 0, 4,
+		2, wgfx::DiscardFlags::None));
+
+	CHECK(!view.submit(program, indirect, 0, plainBuffer));
+	CHECK(!view.submit(program, indirect, 0, sixteenBit));
+	CHECK(!view.submit(program, indirect, 2, numBuffer));
+	CHECK(!view.submit(program, indirect, 0, numBuffer, 1));
+	CHECK(!view.submit(program, indirect, 0, numBuffer, 0, 0));
+	CHECK(!view.submit(program, indirect, 0, wgfx::IndexBuffer{}));
+
+	const wgfx::View invalid;
+	CHECK(!invalid.submit(program, indirect, 0, numBuffer));
+}
+
 TEST(view_dies_with_device)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -382,6 +510,12 @@ TEST(view_requires_bgfx_backend)
 	CHECK(!view.reset_settings());
 	CHECK(!view.touch());
 	CHECK(!view.set_state(wgfx::RenderState{}));
+	CHECK(!view.set_instance_count(1));
+	CHECK(!view.set_instance_data_buffer(wgfx::VertexBuffer{}, 0, 1));
+	CHECK(!view.set_instance_data_buffer(wgfx::DynamicVertexBuffer{}, 0, 1));
+	CHECK(!view.submit(wgfx::Program{}, wgfx::IndirectBuffer{}));
+	CHECK(!view.submit(
+		wgfx::Program{}, wgfx::IndirectBuffer{}, 0, wgfx::IndexBuffer{}));
 	CHECK(!view.discard());
 
 	const wgfx::View copy{ view };

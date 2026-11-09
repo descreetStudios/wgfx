@@ -51,7 +51,19 @@ namespace wgfx
 		{
 			return format == TextureFormat::Count
 				|| static_cast<u16>(format)
-					< static_cast<u16>(TextureFormat::Count);
+				< static_cast<u16>(TextureFormat::Count);
+		}
+
+		bool supports_draw_indirect()
+		{
+			const bgfx::Caps* caps{ bgfx::getCaps() };
+			return caps && 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
+		}
+
+		bool supports_draw_indirect_count()
+		{
+			const bgfx::Caps* caps{ bgfx::getCaps() };
+			return caps && 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT_COUNT);
 		}
 
 		bgfx::ViewMode::Enum to_bgfx(ViewMode mode)
@@ -504,9 +516,9 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !buffer.valid()
-		|| !valid_stream(stream)
-		|| numVertices == 0)
+			|| !buffer.valid()
+			|| !valid_stream(stream)
+			|| numVertices == 0)
 		{
 			return false;
 		}
@@ -553,9 +565,9 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !buffer.valid()
-		|| !valid_stream(stream)
-		|| numVertices == 0)
+			|| !buffer.valid()
+			|| !valid_stream(stream)
+			|| numVertices == 0)
 		{
 			return false;
 		}
@@ -648,6 +660,64 @@ namespace wgfx
 #endif
 	}
 
+	bool View::set_instance_count(u32 count) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid())
+			return false;
+
+		bgfx::setInstanceCount(count);
+		return true;
+#else
+		(void)count;
+		return false;
+#endif
+	}
+
+	bool View::set_instance_data_buffer(
+		const VertexBuffer& buffer,
+		u32 startVertex,
+		u32 numInstances) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !buffer.valid() || numInstances == 0)
+			return false;
+
+		bgfx::setInstanceDataBuffer(
+			detail::VertexBufferAccess::native(buffer),
+			startVertex,
+			numInstances);
+		return true;
+#else
+		(void)buffer;
+		(void)startVertex;
+		(void)numInstances;
+		return false;
+#endif
+	}
+
+	bool View::set_instance_data_buffer(
+		const DynamicVertexBuffer& buffer,
+		u32 startVertex,
+		u32 numInstances) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid() || !buffer.valid() || numInstances == 0)
+			return false;
+
+		bgfx::setInstanceDataBuffer(
+			detail::DynamicVertexBufferAccess::native(buffer),
+			startVertex,
+			numInstances);
+		return true;
+#else
+		(void)buffer;
+		(void)startVertex;
+		(void)numInstances;
+		return false;
+#endif
+	}
+
 	bool View::set_texture(
 		u8 stage,
 		const Uniform& sampler,
@@ -655,9 +725,9 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !sampler.valid()
-		|| !texture.valid())
+			|| !valid_stage(stage)
+			|| !sampler.valid()
+			|| !texture.valid())
 		{
 			return false;
 		}
@@ -683,9 +753,9 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !sampler.valid()
-		|| !texture.valid())
+			|| !valid_stage(stage)
+			|| !sampler.valid()
+			|| !texture.valid())
 		{
 			return false;
 		}
@@ -714,10 +784,10 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !texture.valid()
-		|| !valid_access(access)
-		|| !valid_image_format(format))
+			|| !valid_stage(stage)
+			|| !texture.valid()
+			|| !valid_access(access)
+			|| !valid_image_format(format))
 		{
 			return false;
 		}
@@ -750,11 +820,11 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !texture.valid()
-		|| numLayers == 0
-		|| !valid_access(access)
-		|| !valid_image_format(format))
+			|| !valid_stage(stage)
+			|| !texture.valid()
+			|| numLayers == 0
+			|| !valid_access(access)
+			|| !valid_image_format(format))
 		{
 			return false;
 		}
@@ -789,10 +859,10 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !buffer.valid()
-		|| !valid_access(access)
-		|| !valid_buffer_range(offset, size))
+			|| !valid_stage(stage)
+			|| !buffer.valid()
+			|| !valid_access(access)
+			|| !valid_buffer_range(offset, size))
 		{
 			return false;
 		}
@@ -823,10 +893,10 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !buffer.valid()
-		|| !valid_access(access)
-		|| !valid_buffer_range(offset, size))
+			|| !valid_stage(stage)
+			|| !buffer.valid()
+			|| !valid_access(access)
+			|| !valid_buffer_range(offset, size))
 		{
 			return false;
 		}
@@ -857,10 +927,10 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !buffer.valid()
-		|| !valid_access(access)
-		|| !valid_buffer_range(offset, size))
+			|| !valid_stage(stage)
+			|| !buffer.valid()
+			|| !valid_access(access)
+			|| !valid_buffer_range(offset, size))
 		{
 			return false;
 		}
@@ -891,10 +961,10 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !buffer.valid()
-		|| !valid_access(access)
-		|| !valid_buffer_range(offset, size))
+			|| !valid_stage(stage)
+			|| !buffer.valid()
+			|| !valid_access(access)
+			|| !valid_buffer_range(offset, size))
 		{
 			return false;
 		}
@@ -923,9 +993,9 @@ namespace wgfx
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!valid()
-		|| !valid_stage(stage)
-		|| !buffer.valid()
-		|| !valid_access(access))
+			|| !valid_stage(stage)
+			|| !buffer.valid()
+			|| !valid_access(access))
 		{
 			return false;
 		}
@@ -982,10 +1052,10 @@ namespace wgfx
 #if defined(WGFX_BACKEND_BGFX)
 		const u32 count{ indirect.count() };
 		if (!valid()
-		|| !program.valid()
-		|| num == 0
-		|| start > count
-		|| num > count - start)
+			|| !program.valid()
+			|| num == 0
+			|| start > count
+			|| num > count - start)
 		{
 			return false;
 		}
@@ -1057,6 +1127,102 @@ namespace wgfx
 #endif
 	}
 
+	bool View::submit(
+		const Program& program,
+		const IndirectBuffer& indirect,
+		u32 start,
+		u32 num,
+		u32 depth,
+		DiscardFlags flags) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+			|| !program.valid()
+			|| !indirect.valid()
+			|| !supports_draw_indirect())
+		{
+			return false;
+		}
+
+		const u32 count{ indirect.count() };
+		if (num == 0 || start > count || num > count - start)
+			return false;
+
+		bgfx::submit(
+			mId,
+			detail::ProgramAccess::native(program),
+			detail::IndirectBufferAccess::native(indirect),
+			start,
+			num,
+			depth,
+			static_cast<u8>(flags));
+		return true;
+#else
+		(void)program;
+		(void)indirect;
+		(void)start;
+		(void)num;
+		(void)depth;
+		(void)flags;
+		return false;
+#endif
+	}
+
+	bool View::submit(
+		const Program& program,
+		const IndirectBuffer& indirect,
+		u32 start,
+		const IndexBuffer& numBuffer,
+		u32 numIndex,
+		u32 numMax,
+		u32 depth,
+		DiscardFlags flags) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!valid()
+			|| !program.valid()
+			|| !indirect.valid()
+			|| !numBuffer.valid()
+			|| !numBuffer.index_32()
+			|| !numBuffer.has_flag(BufferFlags::DrawIndirect)
+			|| !supports_draw_indirect()
+			|| !supports_draw_indirect_count())
+		{
+			return false;
+		}
+
+		const u32 count{ indirect.count() };
+		if (start >= count
+			|| numMax == 0
+			|| numIndex >= numBuffer.count())
+		{
+			return false;
+		}
+
+		bgfx::submit(
+			mId,
+			detail::ProgramAccess::native(program),
+			detail::IndirectBufferAccess::native(indirect),
+			start,
+			detail::IndexBufferAccess::native(numBuffer),
+			numIndex,
+			numMax,
+			depth,
+			static_cast<u8>(flags));
+		return true;
+#else
+		(void)program;
+		(void)indirect;
+		(void)start;
+		(void)numBuffer;
+		(void)numIndex;
+		(void)numMax;
+		(void)depth;
+		(void)flags;
+		return false;
+#endif
+	}
+
 	bool View::discard(DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
@@ -1070,4 +1236,4 @@ namespace wgfx
 		return false;
 #endif
 	}
-} // namespace wgfx
+}

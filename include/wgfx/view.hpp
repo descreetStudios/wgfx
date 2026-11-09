@@ -117,6 +117,12 @@ namespace wgfx
 		bool set_index_buffer(const DynamicIndexBuffer& buffer,
 			u32 firstIndex, u32 numIndices) const;
 
+		bool set_instance_count(u32 count) const;
+		bool set_instance_data_buffer(const VertexBuffer& buffer,
+			u32 startVertex, u32 numInstances) const;
+		bool set_instance_data_buffer(const DynamicVertexBuffer& buffer,
+			u32 startVertex, u32 numInstances) const;
+
 		bool set_texture(u8 stage,
 			const Uniform& sampler,
 			const Texture& texture) const;
@@ -177,6 +183,15 @@ namespace wgfx
 			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
 		bool submit(const Program& program,
 			const OcclusionQuery& query,
+			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
+		bool submit(const Program& program,
+			const IndirectBuffer& indirect,
+			u32 start = 0, u32 num = 1,
+			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
+		bool submit(const Program& program,
+			const IndirectBuffer& indirect,
+			u32 start, const IndexBuffer& numBuffer,
+			u32 numIndex = 0, u32 numMax = 0xffffffffu,
 			u32 depth = 0, DiscardFlags flags = DiscardFlags::All) const;
 		bool discard(DiscardFlags flags = DiscardFlags::All) const;
 

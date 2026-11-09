@@ -39,6 +39,35 @@ TEST(index_buffer_creates_with_active_device)
 	CHECK(buffer32.valid());
 }
 
+TEST(index_buffer_reports_metadata)
+{
+	auto device = wgfx::Device::create(headless_desc());
+	REQUIRE(device != nullptr);
+
+	const wgfx::IndexBuffer buffer16{
+		wgfx::IndexBuffer::create(Indices16, sizeof(Indices16)) };
+	REQUIRE(buffer16.valid());
+	CHECK_EQ(buffer16.count(), 3u);
+	CHECK(!buffer16.index_32());
+	CHECK(!buffer16.has_flag(wgfx::BufferFlags::DrawIndirect));
+
+	const wgfx::IndexBuffer buffer32{
+		wgfx::IndexBuffer::create(
+			Indices32,
+			sizeof(Indices32),
+			wgfx::IndexType::Uint32,
+			wgfx::BufferFlags::DrawIndirect) };
+	REQUIRE(buffer32.valid());
+	CHECK_EQ(buffer32.count(), 3u);
+	CHECK(buffer32.index_32());
+	CHECK(buffer32.has_flag(wgfx::BufferFlags::DrawIndirect));
+
+	const wgfx::IndexBuffer invalid;
+	CHECK_EQ(invalid.count(), 0u);
+	CHECK(!invalid.index_32());
+	CHECK(!invalid.has_flag(wgfx::BufferFlags::None));
+}
+
 TEST(index_buffer_rejects_invalid_input)
 {
 	auto device = wgfx::Device::create(headless_desc());
@@ -127,6 +156,9 @@ TEST(index_buffer_requires_bgfx_backend)
 		wgfx::IndexBuffer::create(indices, sizeof(indices)) };
 
 	CHECK(!buffer.valid());
+	CHECK_EQ(buffer.count(), 0u);
+	CHECK(!buffer.index_32());
+	CHECK(!buffer.has_flag(wgfx::BufferFlags::DrawIndirect));
 	buffer.reset();
 }
 

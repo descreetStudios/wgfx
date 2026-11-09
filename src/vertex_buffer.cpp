@@ -20,6 +20,8 @@ namespace wgfx
 			"BufferFlags::ComputeWrite must mirror BGFX_BUFFER_COMPUTE_WRITE");
 		static_assert(static_cast<u16>(BufferFlags::ComputeReadWrite) == BGFX_BUFFER_COMPUTE_READ_WRITE,
 			"BufferFlags::ComputeReadWrite must mirror BGFX_BUFFER_COMPUTE_READ_WRITE");
+		static_assert(static_cast<u16>(BufferFlags::DrawIndirect) == BGFX_BUFFER_DRAW_INDIRECT,
+			"BufferFlags::DrawIndirect must mirror BGFX_BUFFER_DRAW_INDIRECT");
 		static_assert(static_cast<u16>(BufferFlags::AllowResize) == BGFX_BUFFER_ALLOW_RESIZE,
 			"BufferFlags::AllowResize must mirror BGFX_BUFFER_ALLOW_RESIZE");
 		static_assert(static_cast<u16>(BufferFlags::Index32) == BGFX_BUFFER_INDEX32,

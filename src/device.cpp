@@ -137,6 +137,9 @@ namespace wgfx
 			mCaps.maxViews = caps->limits.maxViews;
 			mCaps.maxFrameBuffers = caps->limits.maxFrameBuffers;
 			mCaps.swapChain = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
+			mCaps.drawIndirect = 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
+			mCaps.drawIndirectCount =
+				0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT_COUNT);
 		}
 
 		mRendererName = bgfx::getRendererName(bgfx::getRendererType());
