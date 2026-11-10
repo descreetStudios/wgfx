@@ -1,4 +1,5 @@
 #include <wgfx/view.hpp>
+#include <wgfx/transient_buffer.hpp>
 
 #include "device_internal.hpp"
 
