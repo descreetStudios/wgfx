@@ -123,15 +123,6 @@ namespace wgfx
 				: static_cast<bgfx::BackbufferRatio::Enum>(ratio);
 		}
 
-		bgfx::TextureRegion to_bgfx(const TextureRegion& region)
-		{
-			return bgfx::TextureRegion{
-				detail::TextureAccess::native(*region.texture),
-				region.mip, region.x, region.y, region.z,
-				region.width, region.height, region.depth,
-			};
-		}
-
 		bool is_image_container(const void* data, u32 size)
 		{
 			if (!data)
@@ -572,12 +563,11 @@ namespace wgfx
 #endif
 	}
 
-	bool Texture::blit(
-		u16 view,
+#if defined(WGFX_BACKEND_BGFX)
+	bool detail::TextureAccess::blit_valid(
 		const TextureRegion& dstRegion,
 		const TextureRegion& srcRegion)
 	{
-#if defined(WGFX_BACKEND_BGFX)
 		if (!dstRegion.texture || !srcRegion.texture)
 			return false;
 
@@ -588,7 +578,8 @@ namespace wgfx
 			return false;
 
 		if (dst.mImmutable
-			|| (dst.mDesc.flags & TextureFlags::BlitDestination) == TextureFlags::None)
+			|| (dst.mDesc.flags & TextureFlags::BlitDestination)
+				== TextureFlags::None)
 		{
 			return false;
 		}
@@ -616,11 +607,26 @@ namespace wgfx
 			return false;
 		}
 
+		return true;
+	}
+#endif
+
+	bool Texture::blit(u16 view,
+		const TextureRegion& dstRegion,
+		const TextureRegion& srcRegion)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!detail::TextureAccess::blit_valid(dstRegion, srcRegion))
+			return false;
+
 		const bgfx::Caps* caps{ bgfx::getCaps() };
 		if (!caps || view >= caps->limits.maxViews)
 			return false;
 
-		bgfx::blit(view, to_bgfx(dstRegion), to_bgfx(srcRegion));
+		bgfx::blit(
+			view,
+			detail::TextureAccess::region(dstRegion),
+			detail::TextureAccess::region(srcRegion));
 		return true;
 #else
 		(void)view;

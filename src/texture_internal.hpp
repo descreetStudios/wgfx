@@ -15,6 +15,19 @@ namespace wgfx
 			{
 				return bgfx::TextureHandle{ texture.mHandle };
 			}
+
+			static bgfx::TextureRegion region(const TextureRegion& region)
+			{
+				return bgfx::TextureRegion{
+					native(*region.texture),
+					region.mip, region.x, region.y, region.z,
+					region.width, region.height, region.depth,
+				};
+			}
+
+			static bool blit_valid(
+				const TextureRegion& dst,
+				const TextureRegion& src);
 		};
 	} // namespace detail
 }

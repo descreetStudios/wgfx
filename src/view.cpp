@@ -1,20 +1,10 @@
 #include <wgfx/view.hpp>
-#include <wgfx/transient_buffer.hpp>
 
 #include "device_internal.hpp"
 
 #if defined(WGFX_BACKEND_BGFX)
-#include "dynamic_index_buffer_internal.hpp"
-#include "dynamic_vertex_buffer_internal.hpp"
+#include "draw_common.hpp"
 #include "framebuffer_internal.hpp"
-#include "index_buffer_internal.hpp"
-#include "indirect_buffer_internal.hpp"
-#include "occlusion_query_internal.hpp"
-#include "program_internal.hpp"
-#include "texture_internal.hpp"
-#include "transient_buffer_internal.hpp"
-#include "uniform_internal.hpp"
-#include "vertex_buffer_internal.hpp"
 
 #include <bgfx/bgfx.h>
 #endif
@@ -24,49 +14,7 @@ namespace wgfx
 #if defined(WGFX_BACKEND_BGFX)
 	namespace
 	{
-		constexpr u8 MaxVertexStreams{ 4 };
-		constexpr u8 MaxStages{ 16 };
 		constexpr u16 ClearFlagsMask{ 0x1fff };
-		constexpr u32 BufferOffsetAlignment{ 256 };
-
-		bool valid_stream(u8 stream)
-		{
-			return stream < MaxVertexStreams;
-		}
-
-		bool valid_stage(u8 stage)
-		{
-			return stage < MaxStages;
-		}
-
-		bool valid_access(Access access)
-		{
-			return static_cast<u8>(access) < static_cast<u8>(Access::Count);
-		}
-
-		bool valid_buffer_range(u32 offset, u32 size)
-		{
-			return offset % BufferOffsetAlignment == 0 && size != 0;
-		}
-
-		bool valid_image_format(TextureFormat format)
-		{
-			return format == TextureFormat::Count
-				|| static_cast<u16>(format)
-				< static_cast<u16>(TextureFormat::Count);
-		}
-
-		bool supports_draw_indirect()
-		{
-			const bgfx::Caps* caps{ bgfx::getCaps() };
-			return caps && 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
-		}
-
-		bool supports_draw_indirect_count()
-		{
-			const bgfx::Caps* caps{ bgfx::getCaps() };
-			return caps && 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT_COUNT);
-		}
 
 		bool supports_variable_rate_shading()
 		{
@@ -640,17 +588,20 @@ namespace wgfx
 
 	bool View::set_state(const RenderState& state) const
 	{
-		return set_state(state.flags, state.rgba);
+#if defined(WGFX_BACKEND_BGFX)
+		return detail::draw::set_state(
+			detail::draw::GlobalTarget{}, valid(), state);
+#else
+		(void)state;
+		return false;
+#endif
 	}
 
 	bool View::set_state(RenderStateFlags flags, u32 rgba) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setState(static_cast<u64>(flags), rgba);
-		return true;
+		return detail::draw::set_state(
+			detail::draw::GlobalTarget{}, valid(), flags, rgba);
 #else
 		(void)flags;
 		(void)rgba;
@@ -661,11 +612,8 @@ namespace wgfx
 	bool View::set_vertex_count(u32 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setVertexCount(count);
-		return true;
+		return detail::draw::set_vertex_count(
+			detail::draw::GlobalTarget{}, valid(), count);
 #else
 		(void)count;
 		return false;
@@ -675,11 +623,8 @@ namespace wgfx
 	bool View::set_model_transform(const void* matrix, u16 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !matrix || count == 0)
-			return false;
-
-		bgfx::setTransform(matrix, count);
-		return true;
+		return detail::draw::set_model_transform(
+			detail::draw::GlobalTarget{}, valid(), matrix, count);
 #else
 		(void)matrix;
 		(void)count;
@@ -687,14 +632,15 @@ namespace wgfx
 #endif
 	}
 
-	bool View::set_draw_scissor(u16 x, u16 y, u16 width, u16 height) const
+	bool View::set_draw_scissor(
+		u16 x,
+		u16 y,
+		u16 width,
+		u16 height) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setScissor(x, y, width, height);
-		return true;
+		return detail::draw::set_draw_scissor(
+			detail::draw::GlobalTarget{}, valid(), x, y, width, height);
 #else
 		(void)x;
 		(void)y;
@@ -711,11 +657,9 @@ namespace wgfx
 		bool depthClamp) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setDepthControl(constant, slopeScale, clamp, depthClamp);
-		return true;
+		return detail::draw::set_depth_control(
+			detail::draw::GlobalTarget{}, valid(),
+			constant, slopeScale, clamp, depthClamp);
 #else
 		(void)constant;
 		(void)slopeScale;
@@ -728,11 +672,8 @@ namespace wgfx
 	bool View::set_sample_mask(u32 mask) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setSampleMask(mask);
-		return true;
+		return detail::draw::set_sample_mask(
+			detail::draw::GlobalTarget{}, valid(), mask);
 #else
 		(void)mask;
 		return false;
@@ -742,11 +683,8 @@ namespace wgfx
 	bool View::set_stencil(u32 front, u32 back) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setStencil(front, back);
-		return true;
+		return detail::draw::set_stencil(
+			detail::draw::GlobalTarget{}, valid(), front, back);
 #else
 		(void)front;
 		(void)back;
@@ -754,16 +692,13 @@ namespace wgfx
 #endif
 	}
 
-	bool View::set_vertex_buffer(u8 stream, const VertexBuffer& buffer) const
+	bool View::set_vertex_buffer(
+		u8 stream,
+		const VertexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || !valid_stream(stream))
-			return false;
-
-		bgfx::setVertexBuffer(
-			stream,
-			detail::VertexBufferAccess::native(buffer));
-		return true;
+		return detail::draw::set_vertex_buffer(
+			detail::draw::GlobalTarget{}, valid(), stream, buffer);
 #else
 		(void)stream;
 		(void)buffer;
@@ -778,20 +713,9 @@ namespace wgfx
 		u32 numVertices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !buffer.valid()
-			|| !valid_stream(stream)
-			|| numVertices == 0)
-		{
-			return false;
-		}
-
-		bgfx::setVertexBuffer(
-			stream,
-			detail::VertexBufferAccess::native(buffer),
-			startVertex,
-			numVertices);
-		return true;
+		return detail::draw::set_vertex_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stream, buffer, startVertex, numVertices);
 #else
 		(void)stream;
 		(void)buffer;
@@ -806,13 +730,8 @@ namespace wgfx
 		const DynamicVertexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || !valid_stream(stream))
-			return false;
-
-		bgfx::setVertexBuffer(
-			stream,
-			detail::DynamicVertexBufferAccess::native(buffer));
-		return true;
+		return detail::draw::set_vertex_buffer(
+			detail::draw::GlobalTarget{}, valid(), stream, buffer);
 #else
 		(void)stream;
 		(void)buffer;
@@ -827,20 +746,9 @@ namespace wgfx
 		u32 numVertices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !buffer.valid()
-			|| !valid_stream(stream)
-			|| numVertices == 0)
-		{
-			return false;
-		}
-
-		bgfx::setVertexBuffer(
-			stream,
-			detail::DynamicVertexBufferAccess::native(buffer),
-			startVertex,
-			numVertices);
-		return true;
+		return detail::draw::set_vertex_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stream, buffer, startVertex, numVertices);
 #else
 		(void)stream;
 		(void)buffer;
@@ -864,20 +772,9 @@ namespace wgfx
 		u32 numVertices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !buffer.valid()
-			|| !valid_stream(stream)
-			|| numVertices == 0
-			|| startVertex >= buffer.count()
-			|| numVertices > buffer.count() - startVertex)
-		{
-			return false;
-		}
-
-		const bgfx::TransientVertexBuffer native{
-			detail::TransientBufferAccess::native(buffer) };
-		bgfx::setVertexBuffer(stream, &native, startVertex, numVertices);
-		return true;
+		return detail::draw::set_vertex_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stream, buffer, startVertex, numVertices);
 #else
 		(void)stream;
 		(void)buffer;
@@ -890,11 +787,8 @@ namespace wgfx
 	bool View::set_index_buffer(const IndexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid())
-			return false;
-
-		bgfx::setIndexBuffer(detail::IndexBufferAccess::native(buffer));
-		return true;
+		return detail::draw::set_index_buffer(
+			detail::draw::GlobalTarget{}, valid(), buffer);
 #else
 		(void)buffer;
 		return false;
@@ -907,14 +801,9 @@ namespace wgfx
 		u32 numIndices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || numIndices == 0)
-			return false;
-
-		bgfx::setIndexBuffer(
-			detail::IndexBufferAccess::native(buffer),
-			firstIndex,
-			numIndices);
-		return true;
+		return detail::draw::set_index_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			buffer, firstIndex, numIndices);
 #else
 		(void)buffer;
 		(void)firstIndex;
@@ -926,12 +815,8 @@ namespace wgfx
 	bool View::set_index_buffer(const DynamicIndexBuffer& buffer) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid())
-			return false;
-
-		bgfx::setIndexBuffer(
-			detail::DynamicIndexBufferAccess::native(buffer));
-		return true;
+		return detail::draw::set_index_buffer(
+			detail::draw::GlobalTarget{}, valid(), buffer);
 #else
 		(void)buffer;
 		return false;
@@ -944,14 +829,9 @@ namespace wgfx
 		u32 numIndices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || numIndices == 0)
-			return false;
-
-		bgfx::setIndexBuffer(
-			detail::DynamicIndexBufferAccess::native(buffer),
-			firstIndex,
-			numIndices);
-		return true;
+		return detail::draw::set_index_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			buffer, firstIndex, numIndices);
 #else
 		(void)buffer;
 		(void)firstIndex;
@@ -971,19 +851,9 @@ namespace wgfx
 		u32 numIndices) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !buffer.valid()
-			|| numIndices == 0
-			|| firstIndex >= buffer.count()
-			|| numIndices > buffer.count() - firstIndex)
-		{
-			return false;
-		}
-
-		const bgfx::TransientIndexBuffer native{
-			detail::TransientBufferAccess::native(buffer) };
-		bgfx::setIndexBuffer(&native, firstIndex, numIndices);
-		return true;
+		return detail::draw::set_index_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			buffer, firstIndex, numIndices);
 #else
 		(void)buffer;
 		(void)firstIndex;
@@ -995,11 +865,8 @@ namespace wgfx
 	bool View::set_instance_count(u32 count) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::setInstanceCount(count);
-		return true;
+		return detail::draw::set_instance_count(
+			detail::draw::GlobalTarget{}, valid(), count);
 #else
 		(void)count;
 		return false;
@@ -1012,14 +879,9 @@ namespace wgfx
 		u32 numInstances) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || numInstances == 0)
-			return false;
-
-		bgfx::setInstanceDataBuffer(
-			detail::VertexBufferAccess::native(buffer),
-			startVertex,
-			numInstances);
-		return true;
+		return detail::draw::set_instance_data_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			buffer, startVertex, numInstances);
 #else
 		(void)buffer;
 		(void)startVertex;
@@ -1034,14 +896,9 @@ namespace wgfx
 		u32 numInstances) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid() || numInstances == 0)
-			return false;
-
-		bgfx::setInstanceDataBuffer(
-			detail::DynamicVertexBufferAccess::native(buffer),
-			startVertex,
-			numInstances);
-		return true;
+		return detail::draw::set_instance_data_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			buffer, startVertex, numInstances);
 #else
 		(void)buffer;
 		(void)startVertex;
@@ -1056,22 +913,8 @@ namespace wgfx
 		u32 num) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !buffer.valid())
-			return false;
-
-		const u32 count{ buffer.count() };
-		if (start >= count)
-			return false;
-
-		if (num == WholeBuffer)
-			num = count - start;
-		else if (num == 0 || num > count - start)
-			return false;
-
-		const bgfx::InstanceDataBuffer native{
-			detail::TransientBufferAccess::native(buffer) };
-		bgfx::setInstanceDataBuffer(&native, start, num);
-		return true;
+		return detail::draw::set_instance_data_buffer(
+			detail::draw::GlobalTarget{}, valid(), buffer, start, num);
 #else
 		(void)buffer;
 		(void)start;
@@ -1086,19 +929,8 @@ namespace wgfx
 		const Texture& texture) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !sampler.valid()
-			|| !texture.valid())
-		{
-			return false;
-		}
-
-		bgfx::setTexture(
-			stage,
-			detail::UniformAccess::native(sampler),
-			detail::TextureAccess::native(texture));
-		return true;
+		return detail::draw::set_texture(
+			detail::draw::GlobalTarget{}, valid(), stage, sampler, texture);
 #else
 		(void)stage;
 		(void)sampler;
@@ -1114,20 +946,9 @@ namespace wgfx
 		SamplerFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !sampler.valid()
-			|| !texture.valid())
-		{
-			return false;
-		}
-
-		bgfx::setTexture(
-			stage,
-			detail::UniformAccess::native(sampler),
-			detail::TextureAccess::native(texture),
-			static_cast<u32>(flags));
-		return true;
+		return detail::draw::set_texture(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, sampler, texture, flags);
 #else
 		(void)stage;
 		(void)sampler;
@@ -1145,22 +966,9 @@ namespace wgfx
 		TextureFormat format) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !texture.valid()
-			|| !valid_access(access)
-			|| !valid_image_format(format))
-		{
-			return false;
-		}
-
-		bgfx::setImage(
-			stage,
-			detail::TextureAccess::native(texture),
-			mip,
-			static_cast<bgfx::Access::Enum>(access),
-			static_cast<bgfx::TextureFormat::Enum>(format));
-		return true;
+		return detail::draw::set_image(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, texture, mip, access, format);
 #else
 		(void)stage;
 		(void)texture;
@@ -1181,25 +989,9 @@ namespace wgfx
 		TextureFormat format) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !texture.valid()
-			|| numLayers == 0
-			|| !valid_access(access)
-			|| !valid_image_format(format))
-		{
-			return false;
-		}
-
-		bgfx::setImage(
-			stage,
-			detail::TextureAccess::native(texture),
-			firstLayer,
-			numLayers,
-			mip,
-			static_cast<bgfx::Access::Enum>(access),
-			static_cast<bgfx::TextureFormat::Enum>(format));
-		return true;
+		return detail::draw::set_image(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, texture, firstLayer, numLayers, mip, access, format);
 #else
 		(void)stage;
 		(void)texture;
@@ -1220,22 +1012,9 @@ namespace wgfx
 		u32 size) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !buffer.valid()
-			|| !valid_access(access)
-			|| !valid_buffer_range(offset, size))
-		{
-			return false;
-		}
-
-		bgfx::setBuffer(
-			stage,
-			detail::VertexBufferAccess::native(buffer),
-			static_cast<bgfx::Access::Enum>(access),
-			offset,
-			size);
-		return true;
+		return detail::draw::set_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, buffer, access, offset, size);
 #else
 		(void)stage;
 		(void)buffer;
@@ -1254,22 +1033,9 @@ namespace wgfx
 		u32 size) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !buffer.valid()
-			|| !valid_access(access)
-			|| !valid_buffer_range(offset, size))
-		{
-			return false;
-		}
-
-		bgfx::setBuffer(
-			stage,
-			detail::IndexBufferAccess::native(buffer),
-			static_cast<bgfx::Access::Enum>(access),
-			offset,
-			size);
-		return true;
+		return detail::draw::set_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, buffer, access, offset, size);
 #else
 		(void)stage;
 		(void)buffer;
@@ -1288,22 +1054,9 @@ namespace wgfx
 		u32 size) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !buffer.valid()
-			|| !valid_access(access)
-			|| !valid_buffer_range(offset, size))
-		{
-			return false;
-		}
-
-		bgfx::setBuffer(
-			stage,
-			detail::DynamicVertexBufferAccess::native(buffer),
-			static_cast<bgfx::Access::Enum>(access),
-			offset,
-			size);
-		return true;
+		return detail::draw::set_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, buffer, access, offset, size);
 #else
 		(void)stage;
 		(void)buffer;
@@ -1322,22 +1075,9 @@ namespace wgfx
 		u32 size) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !buffer.valid()
-			|| !valid_access(access)
-			|| !valid_buffer_range(offset, size))
-		{
-			return false;
-		}
-
-		bgfx::setBuffer(
-			stage,
-			detail::DynamicIndexBufferAccess::native(buffer),
-			static_cast<bgfx::Access::Enum>(access),
-			offset,
-			size);
-		return true;
+		return detail::draw::set_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, buffer, access, offset, size);
 #else
 		(void)stage;
 		(void)buffer;
@@ -1354,19 +1094,9 @@ namespace wgfx
 		Access access) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !valid_stage(stage)
-			|| !buffer.valid()
-			|| !valid_access(access))
-		{
-			return false;
-		}
-
-		bgfx::setBuffer(
-			stage,
-			detail::IndirectBufferAccess::native(buffer),
-			static_cast<bgfx::Access::Enum>(access));
-		return true;
+		return detail::draw::set_buffer(
+			detail::draw::GlobalTarget{}, valid(),
+			stage, buffer, access);
 #else
 		(void)stage;
 		(void)buffer;
@@ -1383,17 +1113,9 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !program.valid())
-			return false;
-
-		bgfx::dispatch(
-			mId,
-			detail::ProgramAccess::native(program),
-			numX,
-			numY,
-			numZ,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::dispatch(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, numX, numY, numZ, flags);
 #else
 		(void)program;
 		(void)numX;
@@ -1412,24 +1134,9 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		const u32 count{ indirect.count() };
-		if (!valid()
-			|| !program.valid()
-			|| num == 0
-			|| start > count
-			|| num > count - start)
-		{
-			return false;
-		}
-
-		bgfx::dispatch(
-			mId,
-			detail::ProgramAccess::native(program),
-			detail::IndirectBufferAccess::native(indirect),
-			start,
-			num,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::dispatch(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, indirect, start, num, flags);
 #else
 		(void)program;
 		(void)indirect;
@@ -1446,15 +1153,9 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !program.valid())
-			return false;
-
-		bgfx::submit(
-			mId,
-			detail::ProgramAccess::native(program),
-			depth,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::submit(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, depth, flags);
 #else
 		(void)program;
 		(void)depth;
@@ -1470,16 +1171,9 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid() || !program.valid() || !query.valid())
-			return false;
-
-		bgfx::submit(
-			mId,
-			detail::ProgramAccess::native(program),
-			detail::OcclusionQueryAccess::native(query),
-			depth,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::submit(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, query, depth, flags);
 #else
 		(void)program;
 		(void)query;
@@ -1498,27 +1192,9 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !program.valid()
-			|| !indirect.valid()
-			|| !supports_draw_indirect())
-		{
-			return false;
-		}
-
-		const u32 count{ indirect.count() };
-		if (num == 0 || start > count || num > count - start)
-			return false;
-
-		bgfx::submit(
-			mId,
-			detail::ProgramAccess::native(program),
-			detail::IndirectBufferAccess::native(indirect),
-			start,
-			num,
-			depth,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::submit(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, indirect, start, num, depth, flags);
 #else
 		(void)program;
 		(void)indirect;
@@ -1541,37 +1217,10 @@ namespace wgfx
 		DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid()
-			|| !program.valid()
-			|| !indirect.valid()
-			|| !numBuffer.valid()
-			|| !numBuffer.index_32()
-			|| !numBuffer.has_flag(BufferFlags::DrawIndirect)
-			|| !supports_draw_indirect()
-			|| !supports_draw_indirect_count())
-		{
-			return false;
-		}
-
-		const u32 count{ indirect.count() };
-		if (start >= count
-			|| numMax == 0
-			|| numIndex >= numBuffer.count())
-		{
-			return false;
-		}
-
-		bgfx::submit(
-			mId,
-			detail::ProgramAccess::native(program),
-			detail::IndirectBufferAccess::native(indirect),
-			start,
-			detail::IndexBufferAccess::native(numBuffer),
-			numIndex,
-			numMax,
-			depth,
-			static_cast<u8>(flags));
-		return true;
+		return detail::draw::submit(
+			detail::draw::GlobalTarget{}, valid(), mId,
+			program, indirect, start, numBuffer, numIndex, numMax,
+			depth, flags);
 #else
 		(void)program;
 		(void)indirect;
@@ -1588,11 +1237,8 @@ namespace wgfx
 	bool View::discard(DiscardFlags flags) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!valid())
-			return false;
-
-		bgfx::discard(static_cast<u8>(flags));
-		return true;
+		return detail::draw::discard(
+			detail::draw::GlobalTarget{}, valid(), flags);
 #else
 		(void)flags;
 		return false;

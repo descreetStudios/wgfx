@@ -29,6 +29,16 @@ namespace wgfx
 		Wayland,
 	};
 
+	enum class RenderFrame : u8
+	{
+		NoContext,
+		Render,
+		Timeout,
+		Exiting,
+
+		Count,
+	};
+
 	struct NativeWindow
 	{
 		void* handle{ nullptr };
@@ -45,6 +55,7 @@ namespace wgfx
 		bool vsync{ true };
 		bool debug{ false };
 		bool profile{ false };
+		u16 maxEncoders{ 0 };
 	};
 
 	struct DeviceCaps
@@ -62,6 +73,7 @@ namespace wgfx
 		u32 maxTransientVbSize{ 0 };
 		u32 maxTransientIbSize{ 0 };
 		u32 maxInstanceData{ 0 };
+		u32 maxEncoders{ 0 };
 		bool swapChain{ false };
 		bool drawIndirect{ false };
 		bool drawIndirectCount{ false };
@@ -101,6 +113,8 @@ namespace wgfx
 		void set_vsync(bool enabled);
 
 		u32 frame();
+
+		RenderFrame render_frame(i32 timeout = -1);
 
 		bool set_debug(DebugFlags flags,
 			const FrameBuffer* framebuffer = nullptr,

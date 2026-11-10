@@ -22,3 +22,4 @@
 #include <wgfx/render_state.hpp>
 #include <wgfx/diagnostics.hpp>
 #include <wgfx/view.hpp>
+#include <wgfx/encoder.hpp>

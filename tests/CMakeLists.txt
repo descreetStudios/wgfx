@@ -3,7 +3,7 @@ foreach(name test_wgfx test_device test_vertex_layout
         test_program test_texture test_uniform test_framebuffer
         test_dynamic_vertex_buffer test_dynamic_index_buffer
         test_indirect_buffer test_occlusion_query test_transient_buffer
-        test_view test_compute test_diagnostics)
+        test_view test_compute test_diagnostics test_encoder)
     add_executable(${name}
         "${name}.cpp"
         "${WGFX_WCORE_SOURCE_DIR}/src/test.cpp")

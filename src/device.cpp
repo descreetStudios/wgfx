@@ -105,6 +105,19 @@ namespace wgfx
 		WGFX_TOPOLOGY_MIRROR(Count, bgfx::Topology::Count);
 
 #undef WGFX_TOPOLOGY_MIRROR
+
+#define WGFX_RENDER_FRAME_MIRROR(name) \
+		static_assert(static_cast<u8>(RenderFrame::name) \
+			== bgfx::RenderFrame::name, \
+			"RenderFrame::" #name " must mirror bgfx::RenderFrame::" #name)
+
+		WGFX_RENDER_FRAME_MIRROR(NoContext);
+		WGFX_RENDER_FRAME_MIRROR(Render);
+		WGFX_RENDER_FRAME_MIRROR(Timeout);
+		WGFX_RENDER_FRAME_MIRROR(Exiting);
+		WGFX_RENDER_FRAME_MIRROR(Count);
+
+#undef WGFX_RENDER_FRAME_MIRROR
 #endif
 	} // anonymous namespace
 
@@ -148,6 +161,8 @@ namespace wgfx
 		init.swapChain.width = mDesc.width;
 		init.swapChain.height = mDesc.height;
 		init.reset = reset_flags(mDesc);
+		if (mDesc.maxEncoders > 0)
+			init.limits.maxEncoders = mDesc.maxEncoders;
 
 		if (!bgfx::init(init))
 			return false;
@@ -171,6 +186,7 @@ namespace wgfx
 			mCaps.maxTransientVbSize = caps->limits.maxTransientVbSize;
 			mCaps.maxTransientIbSize = caps->limits.maxTransientIbSize;
 			mCaps.maxInstanceData = caps->limits.maxInstanceData;
+			mCaps.maxEncoders = caps->limits.maxEncoders;
 			mCaps.swapChain = 0 != (caps->supported & BGFX_CAPS_SWAP_CHAIN);
 			mCaps.drawIndirect = 0 != (caps->supported & BGFX_CAPS_DRAW_INDIRECT);
 			mCaps.drawIndirectCount =
@@ -290,6 +306,19 @@ namespace wgfx
 		return mFrame;
 #else
 		return 0;
+#endif
+	}
+
+	RenderFrame Device::render_frame(i32 timeout)
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid)
+			return RenderFrame::NoContext;
+
+		return static_cast<RenderFrame>(bgfx::renderFrame(timeout));
+#else
+		(void)timeout;
+		return RenderFrame::NoContext;
 #endif
 	}
 
