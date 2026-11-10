@@ -253,6 +253,7 @@ TEST(encoder_records_graphics_commands)
 
 	CHECK(encoder.touch(view));
 
+	encoder.reset();
 	CHECK(device->frame() > 0);
 	CHECK_EQ(device->stats().encoders.size(), 1u);
 }
@@ -285,6 +286,7 @@ TEST(encoder_records_compute_commands)
 	CHECK(encoder.dispatch(view, program, indirect, 0, 2));
 	CHECK(encoder.touch(view));
 
+	encoder.reset();
 	CHECK(device->frame() > 0);
 }
 
@@ -327,6 +329,7 @@ TEST(encoder_binds_storage_buffers)
 	CHECK(encoder.set_buffer(3, dynamicIndexBuffer, wgfx::Access::ReadWrite));
 	CHECK(encoder.set_buffer(4, indirectBuffer, wgfx::Access::Read));
 
+	encoder.reset();
 	CHECK(device->frame() > 0);
 }
 
@@ -370,6 +373,7 @@ TEST(encoder_blits_textures)
 	dstRegion.texture = &source;
 	CHECK(!encoder.blit(view, dstRegion, srcRegion));
 
+	encoder.reset();
 	CHECK(device->frame() > 0);
 }
 
@@ -437,6 +441,7 @@ TEST(encoder_rejects_invalid_input)
 	CHECK(!encoder.set_condition(wgfx::OcclusionQuery{}, true));
 	CHECK(encoder.set_condition(query, true));
 
+	encoder.reset();
 	CHECK(device->frame() > 0);
 }
 
