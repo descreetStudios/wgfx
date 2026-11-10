@@ -46,14 +46,14 @@
       and verify encoder stats.
 
 ### Callback and capture
-- [ ] Add a `wgfx::Callback` interface for fatal errors, trace messages,
+- [x] Add a `wgfx::Callback` interface for fatal errors, trace messages,
       profiler markers, frame capture and screen shots.
-- [ ] Add `DeviceDesc::callback` and provide a default adapter that forwards
+- [x] Add `DeviceDesc::callback` and provide a default adapter that forwards
       bgfx trace output to `wcore::logger`.
-- [ ] Implement `Device::request_screen_shot(const FrameBuffer&, const char*)`.
-- [ ] Add a typed `FrameFlags` enum and a `Device::frame(FrameFlags)` overload
-      for `BGFX_FRAME_CAPTURE`.
-- [ ] Test callback forwarding and screen-shot request validation.
+- [x] Implement `Device::request_screen_shot(const FrameBuffer&, const char*)`.
+- [x] Add a typed `FrameFlags` enum and a `Device::frame(FrameFlags)` overload
+      for `BGFX_FRAME_DEBUG_CAPTURE`.
+- [x] Test callback forwarding and screen-shot request validation.
 
 ### Device and swap-chain configuration
 - [ ] Let `DeviceDesc` configure the main swap chain through `SwapChainDesc`

@@ -8,7 +8,13 @@
 
 namespace wgfx
 {
+	class Callback;
 	class FrameBuffer;
+
+	namespace detail
+	{
+		class CallbackAdapter;
+	}
 
 	enum class Renderer : u8
 	{
@@ -39,6 +45,33 @@ namespace wgfx
 		Count,
 	};
 
+	// Bit flags matching bgfx's BGFX_FRAME_* values.
+	enum class FrameFlags : u8
+	{
+		None = 0x00,
+		DebugCapture = 0x01,
+		Discard = 0x02,
+		Flush = 0x04,
+	};
+
+	constexpr FrameFlags operator|(FrameFlags lhs, FrameFlags rhs) noexcept
+	{
+		return static_cast<FrameFlags>(
+			static_cast<u8>(lhs) | static_cast<u8>(rhs));
+	}
+
+	constexpr FrameFlags operator&(FrameFlags lhs, FrameFlags rhs) noexcept
+	{
+		return static_cast<FrameFlags>(
+			static_cast<u8>(lhs) & static_cast<u8>(rhs));
+	}
+
+	constexpr FrameFlags& operator|=(FrameFlags& lhs, FrameFlags rhs) noexcept
+	{
+		lhs = lhs | rhs;
+		return lhs;
+	}
+
 	struct NativeWindow
 	{
 		void* handle{ nullptr };
@@ -56,6 +89,8 @@ namespace wgfx
 		bool debug{ false };
 		bool profile{ false };
 		u16 maxEncoders{ 0 };
+
+		Callback* callback{ nullptr };
 	};
 
 	struct DeviceCaps
@@ -108,17 +143,22 @@ namespace wgfx
 
 		void resize(u32 width, u32 height);
 
-		bool reset();
+		bool reset() const;
 
 		void set_vsync(bool enabled);
 
 		u32 frame();
+		u32 frame(FrameFlags flags);
 
-		RenderFrame render_frame(i32 timeout = -1);
+		RenderFrame render_frame(i32 timeout = -1) const;
+
+		bool request_screen_shot(
+			const FrameBuffer& framebuffer,
+			const char* filePath) const;
 
 		bool set_debug(DebugFlags flags,
 			const FrameBuffer* framebuffer = nullptr,
-			u8 scale = 0);
+			u8 scale = 0) const;
 		Stats stats() const;
 
 		bool debug_text_clear(u8 attr = 0, bool small = false);
@@ -148,5 +188,6 @@ namespace wgfx
 		const char* mRendererName{ "none" };
 		bool mValid{ false };
 		u32 mFrame{ 0 };
+		std::unique_ptr<detail::CallbackAdapter> mCallback;
 	};
 }

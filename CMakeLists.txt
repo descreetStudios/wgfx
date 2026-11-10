@@ -22,7 +22,8 @@ add_library(wgfx STATIC
     "src/occlusion_query.cpp"
     "src/transient_buffer.cpp"
     "src/view.cpp"
-    "src/encoder.cpp")
+    "src/encoder.cpp"
+    "src/callback.cpp")
 add_library(wgfx::wgfx ALIAS wgfx)
 
 # --- Definitions --- #

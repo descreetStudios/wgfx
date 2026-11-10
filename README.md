@@ -81,8 +81,12 @@ cmake --preset release -DWGFX_WITH_BGFX=OFF
 ```cpp
 #include <wgfx/wgfx.hpp>
 
+#include <wcore/logger.hpp>
+
 int main()
 {
+    wcore::logger::init();
+
     wgfx::DeviceDesc desc;
     desc.renderer = wgfx::Renderer::Noop; // Auto picks a real backend.
     desc.width = 1280;
@@ -105,6 +109,12 @@ int main()
 time; `create()` returns `nullptr` if another one is active or initialization
 fails. The window itself is owned by the caller and passed through
 `DeviceDesc::window`.
+
+Set `DeviceDesc::callback` to receive fatal errors, trace messages, profiler
+markers, captures and screen shots. When it is null, bgfx trace output is
+forwarded to `wcore::logger`, so initialize the logger first as shown above.
+`Device::request_screen_shot()` accepts a swap-chain framebuffer and a file
+path; the image is delivered to `Callback::screen_shot`.
 
 ## Testing
 

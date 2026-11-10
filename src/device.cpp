@@ -1,5 +1,7 @@
 #include <wgfx/device.hpp>
 
+#include "callback_internal.hpp"
+
 #if defined(WGFX_BACKEND_BGFX)
 #include "framebuffer_internal.hpp"
 
@@ -118,6 +120,17 @@ namespace wgfx
 		WGFX_RENDER_FRAME_MIRROR(Count);
 
 #undef WGFX_RENDER_FRAME_MIRROR
+
+#define WGFX_FRAME_FLAG_MIRROR(name, bgfxName) \
+		static_assert(static_cast<u8>(FrameFlags::name) == (bgfxName), \
+			"FrameFlags::" #name " must mirror " #bgfxName)
+
+		WGFX_FRAME_FLAG_MIRROR(None, BGFX_FRAME_NONE);
+		WGFX_FRAME_FLAG_MIRROR(DebugCapture, BGFX_FRAME_DEBUG_CAPTURE);
+		WGFX_FRAME_FLAG_MIRROR(Discard, BGFX_FRAME_DISCARD);
+		WGFX_FRAME_FLAG_MIRROR(Flush, BGFX_FRAME_FLUSH);
+
+#undef WGFX_FRAME_FLAG_MIRROR
 #endif
 	} // anonymous namespace
 
@@ -164,6 +177,9 @@ namespace wgfx
 		if (mDesc.maxEncoders > 0)
 			init.limits.maxEncoders = mDesc.maxEncoders;
 
+		mCallback = std::make_unique<detail::CallbackAdapter>(mDesc.callback);
+		init.callback = mCallback.get();
+
 		if (!bgfx::init(init))
 			return false;
 
@@ -209,6 +225,7 @@ namespace wgfx
 			return;
 
 		bgfx::shutdown();
+		mCallback.reset();
 		mValid = false;
 		gActive = false;
 		++gGeneration;
@@ -273,7 +290,7 @@ namespace wgfx
 		reset();
 	}
 
-	bool Device::reset()
+	bool Device::reset() const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!mValid || mDesc.width == 0 || mDesc.height == 0)
@@ -298,18 +315,26 @@ namespace wgfx
 
 	u32 Device::frame()
 	{
+		return frame(FrameFlags::None);
+	}
+
+	u32 Device::frame(FrameFlags flags)
+	{
 #if defined(WGFX_BACKEND_BGFX)
-		if (!mValid)
+		constexpr u8 FrameFlagsMask{ 0x07 };
+
+		if (!mValid || (static_cast<u8>(flags) & ~FrameFlagsMask) != 0)
 			return 0;
 
-		mFrame = bgfx::frame();
+		mFrame = bgfx::frame(static_cast<u8>(flags));
 		return mFrame;
 #else
+		(void)flags;
 		return 0;
 #endif
 	}
 
-	RenderFrame Device::render_frame(i32 timeout)
+	RenderFrame Device::render_frame(i32 timeout) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		if (!mValid)
@@ -322,10 +347,34 @@ namespace wgfx
 #endif
 	}
 
+	bool Device::request_screen_shot(
+		const FrameBuffer& framebuffer,
+		const char* filePath) const
+	{
+#if defined(WGFX_BACKEND_BGFX)
+		if (!mValid
+			|| !framebuffer.valid()
+			|| !framebuffer.is_swap_chain()
+			|| !filePath
+			|| filePath[0] == '\0')
+		{
+			return false;
+		}
+
+		bgfx::requestScreenShot(
+			detail::FrameBufferAccess::native(framebuffer), filePath);
+		return true;
+#else
+		(void)framebuffer;
+		(void)filePath;
+		return false;
+#endif
+	}
+
 	bool Device::set_debug(
 		DebugFlags flags,
 		const FrameBuffer* framebuffer,
-		u8 scale)
+		u8 scale) const
 	{
 #if defined(WGFX_BACKEND_BGFX)
 		constexpr u32 DebugFlagsMask{ 0x1f };

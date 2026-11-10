@@ -3,13 +3,22 @@ foreach(name test_wgfx test_device test_vertex_layout
         test_program test_texture test_uniform test_framebuffer
         test_dynamic_vertex_buffer test_dynamic_index_buffer
         test_indirect_buffer test_occlusion_query test_transient_buffer
-        test_view test_compute test_diagnostics test_encoder)
+        test_view test_compute test_diagnostics test_encoder
+        test_callback)
     add_executable(${name}
         "${name}.cpp"
+        "test_logger_init.cpp"
         "${WGFX_WCORE_SOURCE_DIR}/src/test.cpp")
     target_link_libraries(${name} PRIVATE wgfx)
     add_test(NAME wgfx.${name} COMMAND ${name})
 endforeach()
+
+# test_callback exercises the private bgfx callback bridge directly.
+if(WGFX_WITH_BGFX)
+    target_include_directories(test_callback PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src")
+    target_link_libraries(test_callback PRIVATE bgfx)
+endif()
 
 # --- Shader toolchain --- #
 if(WGFX_WITH_BGFX)
@@ -43,6 +52,7 @@ if(WGFX_WITH_BGFX)
 
         add_executable(test_shader_toolchain
             "test_shader_toolchain.cpp"
+            "test_logger_init.cpp"
             "${WGFX_WCORE_SOURCE_DIR}/src/test.cpp")
         target_link_libraries(test_shader_toolchain PRIVATE wgfx)
         target_compile_definitions(test_shader_toolchain PRIVATE
